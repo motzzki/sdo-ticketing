@@ -1,0 +1,24 @@
+/* @media (min-width: 344px) and (max-width: 767px) {
+    .searchbar,
+    .filterbar {
+      width: 50% !important;
+    }
+}
+
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .searchbar,
+    .filterbar {
+      width: 1000px !important;
+    }
+  }
+  .searchbar,
+  .filterbar {
+    width: 50% !important;
+  } */
+
+  @media (max-width: 768px) {
+    .search-filter-container .form-control,
+    .search-filter-container .form-select {
+      max-width: 100% !important;
+    }
+  }

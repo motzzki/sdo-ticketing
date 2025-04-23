@@ -1,0 +1,9 @@
+node_modules
+
+/deped_uploads/*
+!/deped_uploads/.gitkeep
+
+/uploads/*
+!/uploads/.gitkeep
+
+./env

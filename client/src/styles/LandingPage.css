@@ -1,0 +1,68 @@
+.Logo {
+height: 40px;
+width: 40px;
+}
+
+.nav-LandingPage,
+.nav-LandingPage a {
+background-color: #294a70;
+color: white;
+}
+
+.maincontent {
+margin-top: 80px;
+/* height: 90vh; Subtract the height of the navbar (56px or adjust as needed) */
+overflow-y: auto; /* Enable vertical scrolling */
+padding: 10px; /* Optional padding for better spacing */
+}
+
+.nav-LandingPage {
+height: 60px;
+}
+
+.table1,
+.table2,
+.table1 th,
+.table2 th {
+border: transparent;
+background-color: transparent;
+}
+
+.contact-landing,
+.table1 td,
+.table2 td {
+background-color: transparent;
+border: none;
+}
+
+.card-landing {
+height: 420px;
+width: 300px;
+}
+
+.card-image-landing {
+width: 300px;
+height: 200px;
+}
+
+.btnReadMore {
+background-color: #294a70;
+}
+
+.navdrop {
+background-color: white !important;
+}
+
+.NavDropdownItem {
+  background-color: white !important;
+  color: #294a70 !important;
+}
+
+.NavDropdownItem:hover {
+  background-color: #294a70 !important;
+  color: white !important;
+}
+
+.hamburger-icon .navbar-toggler-icon {
+  background-color: white !important;
+}

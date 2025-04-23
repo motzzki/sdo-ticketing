@@ -1,0 +1,123 @@
+.schoolLogin {
+  margin-top: 80px;
+  width: 25%;
+  height: 70vh;
+  border: none;
+  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 25px;
+  /* position: relative;
+  z-index: 1; */
+  background-color: #ffffff;
+}
+
+.schoolHeader {
+  background-color: #294a70;
+  border-top-left-radius: 25px !important;
+  border-top-right-radius: 25px !important;
+  height: 37%;
+}
+
+.schoolLogo {
+  width: 100px;
+}
+
+.schoolUsername,
+.schoolPassword {
+  border-top: none;
+  border-right: none;
+  border-left: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.396);
+  background-color: transparent;
+}
+
+.schoolUsername:focus,
+.schoolPassword:focus {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border-color: #294a70 !important;
+}
+
+.schoolIcon {
+  background-color: transparent;
+  border: none;
+}
+
+.schoolIconhidden {
+  background-color: transparent;
+  border: none;
+  color: transparent;
+}
+
+.schoolBtn {
+  background-color: transparent;
+  border: none;
+}
+
+.schoolLoginBtn {
+ width: 75%;
+ border-radius: 20px;
+ background-color: #294a70;
+ color: #294a708e;
+}
+
+@media (min-width: 344px) and (max-width: 767px) {
+  .schoolLogin {
+    margin-top: 0;
+    width: 100%;
+    height: 100vh;
+    border-radius: 0;
+  }
+  
+  .schoolHeader {
+    border-top-left-radius: 0px !important;
+    border-top-right-radius: 0px !important;
+    height: 230px;
+  }
+  
+  .schoolLogo {
+    width: 90px;
+  }
+  
+  .schoolInput {
+    margin-top: 30px;
+  }
+ 
+  .schoolLoginBtn {
+   width: 100%;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) { 
+  .schoolLogin {
+    margin-top: 0;
+    width: 100%;
+    height: 100vh;
+    border-radius: 0;
+  }
+  
+  .schoolHeader {
+    border-top-left-radius: 0px !important;
+    border-top-right-radius: 0px !important;
+    height: 300px;
+  }
+  
+  .schoolLogo {
+    width: 120px;
+  }
+  
+  .schoolInput {
+    width: 75%;
+    margin: 70px auto;
+  }
+ 
+  .schoolLoginBtn {
+   width: 50%;
+   margin-bottom: 150px;
+   height: 50px;
+   font-size: larger;
+   padding: 5px;
+  }
+
+}
+
+

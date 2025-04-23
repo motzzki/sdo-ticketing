@@ -1,0 +1,8 @@
+.footer-fixed {
+  padding: 10px 0;
+  background-color: #294a70;
+  color: white;
+  text-align: center;
+  width: 100%;
+  margin-top: auto; /* Ensures the footer is pushed to the bottom of the page */
+}

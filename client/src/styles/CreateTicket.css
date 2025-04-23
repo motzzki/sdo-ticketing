@@ -1,0 +1,106 @@
+.buttonsubmit:hover {
+    background-color: aquamarine !important;
+}
+
+
+.create-ticket-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.ticket-form-wrapper {
+    background: #fff;
+    padding: 20px;
+    width: 50%;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.ticket-title {
+    text-align: center;
+    font-size: 24px;
+    color: #333;
+    margin-bottom: 15px;
+}
+
+.ticket-message {
+    text-align: center;
+    color: green;
+    font-weight: bold;
+}
+
+.ticket-number {
+    text-align: center;
+    color: #007bff;
+    font-weight: bold;
+}
+
+.ticket-form {
+    display: flex;
+    flex-direction: column;
+}
+
+.ticket-label {
+    font-weight: bold;
+    margin-top: 10px;
+    color: #333;
+}
+
+.ticket-input,
+.ticket-select,
+.ticket-textarea {
+    width: 100%;
+    padding: 10px;
+    margin-top: 5px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.ticket-textarea {
+    height: 100px;
+    resize: none;
+}
+
+.ticket-file {
+    margin-top: 5px;
+}
+
+.ticket-submit-button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 15px;
+}
+
+.ticket-submit-button:hover {
+    background-color: #0056b3;
+}
+
+.attachment-preview-container {
+    margin-top: 10px;
+}
+
+.attachment-preview-list {
+    list-style: none;
+    padding: 0;
+}
+
+.attachment-preview-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.attachment-image-preview {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
