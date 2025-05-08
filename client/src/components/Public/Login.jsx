@@ -54,7 +54,7 @@ const Login = () => {
     const password = formRef.current.password.value;
   
     try {
-      const response = await axios.post(`${API_BASE_URL}/login`, {
+      const response = await axios.post(`${API_BASE_URL}/api/login/userlogin`, {
         username,
         password,
       });
@@ -97,11 +97,33 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Login error:", error);
-      setErrorMessage("An unexpected error occurred.");
+      
+      // Improved error handling to show more specific errors
+      if (error.response) {
+        // The server responded with a status code outside the 2xx range
+        const data = error.response.data;
+        setErrorMessage(data.message || `Error: ${error.response.status}`);
+        
+        if (data.retryAfter) {
+          setRetryAfter(data.retryAfter);
+        }
+  
+        if (data.remainingAttempts !== undefined) {
+          setRemainingAttempts(data.remainingAttempts);
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        setErrorMessage("Network error. Please check your connection or server status.");
+      } else {
+        // Something happened in setting up the request
+        setErrorMessage("An unexpected error occurred.");
+      }
+      
       setShowModal(true);
     }
   };
-  
+
+
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {

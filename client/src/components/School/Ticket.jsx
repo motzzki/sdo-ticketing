@@ -44,7 +44,7 @@ const Ticket = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/issues`);
+        const response = await axios.get(`${API_BASE_URL}/api/ticket/issues`);
         setIssues(response.data);
 
         // Extract unique categories from issues
@@ -98,7 +98,7 @@ const Ticket = () => {
 
   const handleViewDevices = async (batchId) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/batch/${batchId}/devices`);
+      const response = await axios.get(`${API_BASE_URL}/api/batch/getbatch/${batchId}/devices`);
       const devices = response.data;
 
       Swal.fire({
@@ -228,7 +228,7 @@ const Ticket = () => {
         }
 
         const response = await axios.get(
-          `http://localhost:8080/batches/${decoded.schoolCode}`,
+          `${API_BASE_URL}/api/batch/batches/${decoded.schoolCode}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -349,7 +349,7 @@ const Ticket = () => {
     formData.attachments.forEach(file => data.append("attachments", file));
 
     try {
-      const response = await axios.post("http://localhost:8080/createTickets", data, {
+      const response = await axios.post(`${API_BASE_URL}/api/ticket/createTickets`, data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 

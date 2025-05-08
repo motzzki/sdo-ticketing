@@ -14,28 +14,37 @@ const ViewBatches = ({ filterStatus = "all", searchTerm = "" }) => {
   const fetchBatches = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/schoolBatches`);
+      const source = axios.CancelToken.source();
+      const response = await axios.get(`${API_BASE_URL}/api/batch/schoolBatches`, {
+        cancelToken: source.token,
+      });
       setBatches(Array.isArray(response.data) ? response.data : []);
-      setError(""); // Clear any previous errors
+      setError("");
     } catch (err) {
-      console.error("Error fetching batches:", err);
-      setError("Failed to load batches. Please try again later.");
+      if (!axios.isCancel(err)) {
+        console.error("Error fetching batches:", err);
+        setError("Failed to load batches. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }
+    
+    return () => source.cancel("Request canceled due to new request");
   }, []);
 
   useEffect(() => {
-    fetchBatches();
-    // Set up a refresh interval (every 30 seconds)
-    const interval = setInterval(fetchBatches);
-    return () => clearInterval(interval);
+    fetchBatches(); // 🔹 Fetch immediately on mount
+  
+    const interval = setInterval(fetchBatches, 30000); // 🔁 Continue every 30 seconds
+  
+    return () => clearInterval(interval); // 🧹 Clean up
   }, [fetchBatches]);
+  
 
   const handleViewDevices = async (batchId) => {
     try {
       const response = await axios.get(
-        `${API_BASE_URL}/batch/${batchId}/devices`
+        `${API_BASE_URL}/api/batch/getbatch/${batchId}/devices`
       );
       const devices = response.data;
 
@@ -106,7 +115,7 @@ const ViewBatches = ({ filterStatus = "all", searchTerm = "" }) => {
       });
 
       if (result.isConfirmed) {
-        await axios.put(`${API_BASE_URL}/cancelbatch/${batchId}`);
+        await axios.put(`${API_BASE_URL}/api/cancelbatch/${batchId}`);
 
         await Swal.fire({
           title: "Cancelled!",

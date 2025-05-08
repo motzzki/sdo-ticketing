@@ -16,7 +16,7 @@ const BatchList = ({ status }) => {
 
   const handleViewDevices = async (batchId) => {
     try {
-      const response = await axios.get(`${API_BASE_URL}/batch/${batchId}/devices`);
+      const response = await axios.get(`${API_BASE_URL}/api/batch/getbatch/${batchId}/devices`);
       const devices = response.data;
 
       if (!Array.isArray(devices) || devices.length === 0) {
@@ -82,7 +82,7 @@ const BatchList = ({ status }) => {
       });
 
       if (result.isConfirmed) {
-        await axios.put(`${API_BASE_URL}/receivebatch/${batchId}`);
+        await axios.put(`${API_BASE_URL}/api/batch/receivebatch/${batchId}`);
         await Swal.fire({
           title: "Received!",
           text: "The batch has been received successfully.",
@@ -121,7 +121,7 @@ const BatchList = ({ status }) => {
       const statusParam = status.toLowerCase();
       
       const response = await axios.get(
-        `${API_BASE_URL}/receivebatch/${decoded.schoolCode}/${statusParam}`
+        `${API_BASE_URL}/api/batch/receivebatch/${decoded.schoolCode}/${statusParam}`
       );
       
       // Handle different API response formats safely

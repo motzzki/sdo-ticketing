@@ -62,7 +62,7 @@ const SchoolDashboard = () => {
             statuses.map(async (status) => {
               try {
                 const response = await axios.get(
-                  `${API_BASE_URL}/tickets/${username}/${status}`
+                  `${API_BASE_URL}/api/ticket/tickets/${username}/${status}`
                 );
                 countsObj[status] = response.data.length;
               } catch (err) {

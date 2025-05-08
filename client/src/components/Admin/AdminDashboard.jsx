@@ -30,6 +30,7 @@ const AdminDashboard = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("tickets");
+  const [activeMainTab, setActiveMainTab] = useState("ticketing"); // Track the active main tab
   const { width } = useWindowSize();
 
   useEffect(() => {
@@ -55,59 +56,85 @@ const AdminDashboard = () => {
   const fetchTickets = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/tickets`);
-      const data = response.data;
-
+      const response = await axios.get(`${API_BASE_URL}/api/ticket/tickets`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'Authorization': `Bearer ${localStorage.getItem('token')}` // Add auth header
+        },
+        params: {
+          timestamp: Date.now() // Add timestamp to prevent caching
+        }
+      });
+  
+      let data = response.data;
+  
+      // Handle non-array responses
       if (!Array.isArray(data)) {
-        throw new Error("Received data is not an array");
+        data = []; // Default to empty array
       }
-
+  
       setTickets(data);
       setError("");
     } catch (error) {
       console.error("Error fetching tickets:", error);
       setError("Failed to load tickets. Please try again later.");
+      setTickets([]); // Ensure we always have an array
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchNewAccountRequests = async () => {
-    try {
-      const response = await axios.get(
-        "http://localhost:8080/deped-account-requests"
-      );
-      const data = response.data;
-
-      if (!Array.isArray(data)) {
-        throw new Error("Received new account data is not an array");
+ const fetchNewAccountRequests = async () => {
+  try {
+    const response = await axios.get(
+      `${API_BASE_URL}/api/depedacc/deped-account-requests`,
+      {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        params: {
+          timestamp: Date.now()
+        }
       }
-
-      setNewAccountRequests(data);
-    } catch (error) {
-      console.error("Error fetching new account requests:", error);
-      setError("Failed to load new account requests. Please try again later.");
+    );
+    
+    let data = response.data;
+    if (!Array.isArray(data)) {
+      data = [];
     }
-  };
+    setNewAccountRequests(data);
+    setError("");
+  } catch (error) {
+    console.error("Error fetching new account requests:", error);
+    setError("Failed to load new account requests. Please try again later.");
+    setNewAccountRequests([]);
+  }
+};
 
   // Fetch reset account requests
   const fetchResetAccountRequests = async () => {
     try {
       const response = await axios.get(
-        "http://localhost:8080/deped-account-reset-requests"
+        `${API_BASE_URL}/api/depedacc/deped-account-reset-requests`
       );
-      const data = response.data;
-
+      let data = response.data;
+  
+      // Handle non-array responses
       if (!Array.isArray(data)) {
-        throw new Error("Received reset account data is not an array");
+        data = [];
       }
-
+  
       setResetAccountRequests(data);
+      setError("");
     } catch (error) {
       console.error("Error fetching reset account requests:", error);
-      setError(
-        "Failed to load reset account requests. Please try again later."
-      );
+      setError("Failed to load reset account requests. Please try again later.");
+      setResetAccountRequests([]); // Ensure we always have an array
     }
   };
 
@@ -127,6 +154,18 @@ const AdminDashboard = () => {
     const interval = setInterval(fetchAllData, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  // Update active main tab when active tab changes
+  useEffect(() => {
+    // Map sub-tabs to their parent main tabs
+    if (['tickets', 'newAccounts', 'resetAccounts'].includes(activeTab)) {
+      setActiveMainTab('ticketing');
+    } else if (['batchCreate', 'viewBatches'].includes(activeTab)) {
+      setActiveMainTab('dcp');
+    } else {
+      setActiveMainTab(''); // For standalone tabs
+    }
+  }, [activeTab]);
 
   const statusOptions = [
     "Completed",
@@ -153,8 +192,8 @@ const AdminDashboard = () => {
   };
 
   // Determine if search/filter should be visible
-  // const shouldShowSearchFilter = activeTab !== "batchCreate";
-  const shouldShowSearchFilter = activeTab !== "batchCreate" && activeTab !== "adminchangepass";
+  const shouldShowSearchFilter =
+    activeTab !== "batchCreate" && activeTab !== "adminchangepass";
 
   // Get search placeholder based on active tab
   const getSearchPlaceholder = () => {
@@ -191,6 +230,42 @@ const AdminDashboard = () => {
     }
   };
 
+  // Get breadcrumb based on active tab
+  const getBreadcrumb = () => {
+    if (activeTab === 'tickets' || activeTab === 'newAccounts' || activeTab === 'resetAccounts') {
+      return (
+        <div className="mb-3">
+          <nav aria-label="breadcrumb">
+            <ol className="breadcrumb">
+              <li className="breadcrumb-item">Ticketing</li>
+              <li className="breadcrumb-item active">
+                {activeTab === 'tickets' ? 'Tickets' : 
+                 activeTab === 'newAccounts' ? 'New Account Requests' : 
+                 'Reset Account Requests'}
+              </li>
+            </ol>
+          </nav>
+        </div>
+      );
+    } else if (activeTab === 'batchCreate' || activeTab === 'viewBatches') {
+      return (
+        <div className="mb-3">
+          <nav aria-label="breadcrumb">
+            <ol className="breadcrumb">
+              <li className="breadcrumb-item">DCP</li>
+              <li className="breadcrumb-item active">
+                {activeTab === 'batchCreate' ? 'Create Batch' : 'View Batch'}
+              </li>
+            </ol>
+          </nav>
+        </div>
+      );
+    }
+    
+    // For standalone tabs
+    return null;
+  };
+
   return (
     <>
       <style>
@@ -209,6 +284,21 @@ const AdminDashboard = () => {
             margin-bottom: 20px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
           }
+          
+          .breadcrumb {
+            background-color: #f8f9fa;
+            padding: 0.75rem 1rem;
+            border-radius: 0.25rem;
+          }
+          
+          .breadcrumb-item {
+            color: #6c757d;
+          }
+          
+          .breadcrumb-item.active {
+            color: #344767;
+            font-weight: 500;
+          }
         `}
       </style>
 
@@ -220,6 +310,8 @@ const AdminDashboard = () => {
         role={role}
         activeTab={activeTab}
         setActiveTab={handleTabChange}
+        activeMainTab={activeMainTab}
+        setActiveMainTab={setActiveMainTab}
       />
 
       {/* Main Content */}
@@ -227,12 +319,15 @@ const AdminDashboard = () => {
         className="main-content"
         style={{
           marginLeft: width >= 768 ? "250px" : "0",
-          marginTop: "50px",
+          marginTop: "60px",
           padding: "20px",
           transition: "margin-left 0.3s ease-in-out",
         }}
       >
         {error && <Alert variant="danger">{error}</Alert>}
+
+        {/* Breadcrumb Navigation */}
+        {getBreadcrumb()}
 
         {/* Search and Filter - Only show if not on BatchCreate tab */}
         {shouldShowSearchFilter && (
@@ -254,7 +349,9 @@ const AdminDashboard = () => {
                 className="w-100"
                 style={{ maxWidth: "25%" }}
               >
-                <option value="all">All {activeTab === "issues" ? "Categories" : "Status"}</option>
+                <option value="all">
+                  All {activeTab === "issues" ? "Categories" : "Status"}
+                </option>
                 {getFilterOptions().map((option) => (
                   <option key={option} value={option}>
                     {option}
@@ -310,10 +407,7 @@ const AdminDashboard = () => {
             </Tab.Pane>
 
             <Tab.Pane eventKey="issues">
-              <Issues
-                filterStatus={filterStatus}
-                searchTerm={searchTerm}
-              />
+              <Issues filterStatus={filterStatus} searchTerm={searchTerm} />
             </Tab.Pane>
 
             <Tab.Pane eventKey="adminchangepass">

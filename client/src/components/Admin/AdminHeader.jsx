@@ -5,7 +5,7 @@ import { Badge, Offcanvas } from "react-bootstrap";
 import { useWindowSize } from "react-use";
 import Logo from "../../assets/SDO_Logo1.png";
 import { LuTickets } from "react-icons/lu";
-import { FaRegUser, FaBoxOpen } from "react-icons/fa";
+import { FaRegUser, FaBoxOpen, FaChevronDown, FaChevronRight } from "react-icons/fa";
 import { BiUserPlus } from "react-icons/bi";
 import { MdOutlineRestartAlt } from "react-icons/md";
 import { CiViewList } from "react-icons/ci";
@@ -19,13 +19,21 @@ const AdminHeader = ({
   username, 
   role, 
   activeTab, 
-  setActiveTab 
+  setActiveTab,
+  activeMainTab,
+  setActiveMainTab
 }) => {
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { width } = useWindowSize();
   const [showSidebar, setShowSidebar] = useState(false);
   const sidebarRef = useRef(null);
+  
+  // Track expanded tabs
+  const [expandedTabs, setExpandedTabs] = useState({
+    ticketing: true,  // Start with ticketing expanded
+    dcp: false
+  });
 
   // Handle click outside sidebar on mobile
   useEffect(() => {
@@ -56,6 +64,34 @@ const AdminHeader = ({
     return () => window.removeEventListener('resize', handleResize);
   }, [width]);
 
+  // Toggle expanded state of main tabs
+  const toggleExpandTab = (tab) => {
+    setExpandedTabs(prev => ({
+      ...prev,
+      [tab]: !prev[tab]
+    }));
+    
+    setActiveMainTab(tab);
+  };
+
+  // Handle sub-tab click
+  const handleSubTabClick = (mainTab, subTab) => {
+    setActiveTab(subTab);
+    setActiveMainTab(mainTab);
+    
+    // Ensure the parent tab is expanded
+    if (!expandedTabs[mainTab]) {
+      setExpandedTabs(prev => ({
+        ...prev,
+        [mainTab]: true
+      }));
+    }
+    
+    if (width < 768) {
+      setShowSidebar(false);
+    }
+  };
+
   const handleLogout = () => {
     Swal.fire({
       title: "Are you sure you want to logout?",
@@ -70,14 +106,6 @@ const AdminHeader = ({
         navigate("/");
       }
     });
-  };
-
-  const handleCreateBatch = () => {
-    navigate("/createbatch");
-  };
-
-  const handleCreateBatch2 = () => {
-    navigate("/batchcreate");
   };
 
   const SidebarContent = () => (
@@ -105,63 +133,110 @@ const AdminHeader = ({
       <div className="flex-grow-1">
         <div className="nav flex-column">
           
-          {/* Support Tickets */}
+          {/* TICKETING MAIN TAB */}
           <button
-            className={`nav-link text-dark d-flex align-items-center py-3 px-1 hover-effect border-0 bg-transparent w-100 text-start ${activeTab === 'tickets' ? 'active-nav-item' : ''}`}
-            onClick={() => setActiveTab('tickets')}
+            className={`nav-link text-dark d-flex align-items-center justify-content-between py-3 px-1 hover-effect border-0 bg-transparent w-100 text-start ${activeMainTab === 'ticketing' ? 'active-main-tab' : ''}`}
+            onClick={() => toggleExpandTab('ticketing')}
           >
-            <LuTickets className="me-3 fs-5 " />
-            Tickets
+            <div className="d-flex align-items-center">
+              <LuTickets className="me-3 fs-5" />
+              <span className="fw-medium">Ticketing</span>
+            </div>
+            {expandedTabs.ticketing ? <FaChevronDown className="fs-6" /> : <FaChevronRight className="fs-6" />}
           </button>
           
-          {/* New Account Requests */}
+          {/* Ticketing Sub-Tabs */}
+          {expandedTabs.ticketing && (
+            <div className="ms-4 sub-tabs-container">
+              {/* Tickets Sub-Tab */}
+              <button
+                className={`nav-link text-dark d-flex align-items-center py-2 px-1 hover-effect border-0 bg-transparent w-100 text-start ${activeTab === 'tickets' ? 'active-nav-item' : ''}`}
+                onClick={() => handleSubTabClick('ticketing', 'tickets')}
+              >
+                <LuTickets className="me-3 fs-6" />
+                <span className="fs-6">Tickets</span>
+              </button>
+              
+              {/* New Account Requests Sub-Tab */}
+              <button
+                className={`nav-link text-dark d-flex align-items-center py-2 px-1 hover-effect border-0 bg-transparent w-100 text-start ${activeTab === 'newAccounts' ? 'active-nav-item' : ''}`}
+                onClick={() => handleSubTabClick('ticketing', 'newAccounts')}
+              >
+                <BiUserPlus className="me-3 fs-6" />
+                <span className="fs-6">New Account Requests</span>
+              </button>
+              
+              {/* Reset Account Requests Sub-Tab */}
+              <button
+                className={`nav-link text-dark d-flex align-items-center py-2 px-1 hover-effect border-0 bg-transparent w-100 text-start ${activeTab === 'resetAccounts' ? 'active-nav-item' : ''}`}
+                onClick={() => handleSubTabClick('ticketing', 'resetAccounts')}
+              >
+                <MdOutlineRestartAlt className="me-3 fs-6" />
+                <span className="fs-6">Reset Account Requests</span>
+              </button>
+            </div>
+          )}
+          
+          {/* DCP MAIN TAB */}
           <button
-            className={`nav-link text-dark d-flex align-items-center py-3 px-1 hover-effect border-0 bg-transparent w-100 text-start ${activeTab === 'newAccounts' ? 'active-nav-item' : ''}`}
-            onClick={() => setActiveTab('newAccounts')}
+            className={`nav-link text-dark d-flex align-items-center justify-content-between py-3 px-1 hover-effect border-0 bg-transparent w-100 text-start ${activeMainTab === 'dcp' ? 'active-main-tab' : ''}`}
+            onClick={() => toggleExpandTab('dcp')}
           >
-            <BiUserPlus className="me-3 fs-5" />
-            New Account Requests
+            <div className="d-flex align-items-center">
+              <FaBoxOpen className="me-3 fs-5" />
+              <span className="fw-medium">DCP</span>
+            </div>
+            {expandedTabs.dcp ? <FaChevronDown className="fs-6" /> : <FaChevronRight className="fs-6" />}
           </button>
           
-          {/* Reset Account Requests */}
-          <button
-            className={`nav-link text-dark d-flex align-items-center py-3 px-1 hover-effect border-0 bg-transparent w-100 text-start ${activeTab === 'resetAccounts' ? 'active-nav-item' : ''}`}
-            onClick={() => setActiveTab('resetAccounts')}
-          >
-            <MdOutlineRestartAlt className="me-3 fs-5" />
-            Reset Account Requests
-          </button>
+          {/* DCP Sub-Tabs */}
+          {expandedTabs.dcp && (
+            <div className="ms-4 sub-tabs-container">
+              {/* Create Batch Sub-Tab */}
+              <button
+                className={`nav-link text-dark d-flex align-items-center py-2 px-1 hover-effect border-0 bg-transparent w-100 text-start ${activeTab === 'batchCreate' ? 'active-nav-item' : ''}`}
+                onClick={() => handleSubTabClick('dcp', 'batchCreate')}
+              >
+                <FaBoxOpen className="me-3 fs-6" />
+                <span className="fs-6">Create Batch</span>
+              </button>
+              
+              {/* View Batch Sub-Tab */}
+              <button
+                className={`nav-link text-dark d-flex align-items-center py-2 px-1 hover-effect border-0 bg-transparent w-100 text-start ${activeTab === 'viewBatches' ? 'active-nav-item' : ''}`}
+                onClick={() => handleSubTabClick('dcp', 'viewBatches')}
+              >
+                <CiViewList className="me-3 fs-6" />
+                <span className="fs-6">View Batch</span>
+              </button>
+            </div>
+          )}
 
-          <button
-            className={`nav-link text-dark d-flex align-items-center py-3 px-1 hover-effect border-0 bg-transparent w-100 text-start ${activeTab === 'batchCreate' ? 'active-nav-item' : ''}`}
-            onClick={() => setActiveTab('batchCreate')}
-          >
-            <FaBoxOpen className="me-3 fs-5" />
-            Create Batch
-          </button>
-
-          <button
-            className={`nav-link text-dark d-flex align-items-center py-3 px-1 hover-effect border-0 bg-transparent w-100 text-start ${activeTab === 'viewBatches' ? 'active-nav-item' : ''}`}
-            onClick={() => setActiveTab('viewBatches')}
-          >
-            <CiViewList className="me-3 fs-5" />
-            View Batch
-          </button>
-
+          {/* STANDALONE TABS */}
+          {/* Manage Issue */}
           <button
             className={`nav-link text-dark d-flex align-items-center py-3 px-1 hover-effect border-0 bg-transparent w-100 text-start ${activeTab === 'issues' ? 'active-nav-item' : ''}`}
-            onClick={() => setActiveTab('issues')}
+            onClick={() => {
+              setActiveTab('issues');
+              setActiveMainTab('');
+              if (width < 768) setShowSidebar(false);
+            }}
           >
             <MdAddChart className="me-3 fs-5" />
-            Manage Issue
+            <span className="fw-medium">Manage Issue</span>
           </button>
 
+          {/* Change Password */}
           <button
             className={`nav-link text-dark d-flex align-items-center py-3 px-1 hover-effect border-0 bg-transparent w-100 text-start ${activeTab === 'adminchangepass' ? 'active-nav-item' : ''}`}
-            onClick={() => setActiveTab('adminchangepass')}
+            onClick={() => {
+              setActiveTab('adminchangepass');
+              setActiveMainTab('');
+              if (width < 768) setShowSidebar(false);
+            }}
           >
             <IoKeyOutline className="me-3 fs-5" />
-            Change Password
+            <span className="fw-medium">Change Password</span>
           </button>
         </div>
       </div>
@@ -202,6 +277,18 @@ const AdminHeader = ({
             background-color: rgba(41, 74, 112, 0.1);
             border-radius: 4px;
             font-weight: bold;
+          }
+          
+          .active-main-tab {
+            background-color: rgba(41, 74, 112, 0.05);
+            border-radius: 4px;
+            font-weight: bold;
+          }
+
+          .sub-tabs-container {
+            border-left: 2px solid rgba(41, 74, 112, 0.2);
+            margin-left: 18px;
+            padding-left: 10px;
           }
 
           .logout-btn:hover {

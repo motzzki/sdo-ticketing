@@ -97,7 +97,7 @@ const SupportTickets = ({
       });
 
       if (result.isConfirmed) {
-        await axios.put(`${API_BASE_URL}/tickets/${ticketId}/status`, {
+        await axios.put(`${API_BASE_URL}/api/ticket/tickets/${ticketId}/status`, {
           status: newStatus,
         });
         await fetchTickets();

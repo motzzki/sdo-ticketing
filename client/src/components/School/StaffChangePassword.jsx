@@ -65,7 +65,7 @@ const ChangePassword = () => {
         try {
           const token = localStorage.getItem("token");
           const response = await axios.post(
-            `${API_BASE_URL}/change-password`,
+            `${API_BASE_URL}/api/reset/change-password`,
             { currentPassword, newPassword, confirmPassword },
             { headers: { Authorization: `Bearer ${token}` } }
           );

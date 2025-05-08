@@ -82,7 +82,7 @@ const TicketList = ({ status }) => {
             <button 
               class="btn btn-link btn-sm"
               style="padding: 0.25rem 0.5rem; font-size: 0.875rem;"
-              onclick="window.open('${API_BASE_URL}/uploads/${filename}', '_blank')"
+              onclick="window.open('${API_BASE_URL}/api/uploads/${filename}', '_blank')"
             >
               Open File
             </button>
@@ -133,7 +133,7 @@ const TicketList = ({ status }) => {
           text: "The ticket has been deleted.",
           icon: "success"
         });
-        await axios.put(`${API_BASE_URL}/tickets/${ticketId}/archive`);
+        await axios.put(`${API_BASE_URL}/api/ticket/tickets/${ticketId}/archive`);
         setTickets((prevTickets) =>
           prevTickets.filter((ticket) => ticket.ticketId !== ticketId)
         );
@@ -152,7 +152,7 @@ const TicketList = ({ status }) => {
 
         const decoded = jwtDecode(token);
         const response = await axios.get(
-          `${API_BASE_URL}/tickets/${decoded.username}/${status}`
+          `${API_BASE_URL}/api/ticket/tickets/${decoded.username}/${status}`
         );
         setTickets(response.data);
       } catch (err) {

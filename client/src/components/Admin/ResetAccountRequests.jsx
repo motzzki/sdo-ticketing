@@ -13,8 +13,91 @@ const ResetAccountRequests = ({
 }) => {
   const [error, setError] = useState("");
 
+  // Status options and their configurations
+  const accountStatusOptions = [
+    "Completed",
+    "Pending",
+    "In Progress",
+    "Rejected",
+  ];
+
+  // Status color mapping
+  const getStatusColor = (status) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+        return "#28a745";
+      case "pending":
+        return "#ffc107";
+      case "on hold":
+        return "#6c757d";
+      case "in progress":
+        return "#007bff";
+      case "rejected":
+        return "#dc3545";
+      default:
+        return "#6c757d";
+    }
+  };
+
+  // Badge variant mapping
+  const getStatusBadgeVariant = (status) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+        return "success";
+      case "pending":
+        return "warning";
+      case "on hold":
+        return "secondary";
+      case "in progress":
+        return "primary";
+      case "rejected":
+        return "danger";
+      default:
+        return "secondary";
+    }
+  };
+
+  // Format values for display
+  const formatMiddleName = (middleName) => {
+    return middleName && middleName.trim() !== "" ? middleName : "N/A";
+  };
+
+  const formatEmail = (email) => {
+    return email && email.trim() !== "" ? email : "N/A";
+  };
+  
+  // Get the email value correctly from either email or reset_email field
+  const getEmailValue = (request) => {
+    return request.reset_email || request.email || "N/A";
+  };
+
+  // Handle request status updates
   const handleUpdateResetAccountStatus = async (requestId, newStatus) => {
     try {
+      let rejectionReason = '';
+      
+      // If status is Rejected, prompt for rejection reason
+      if (newStatus.toLowerCase() === 'rejected') {
+        const { value: reason, isDismissed } = await Swal.fire({
+          title: 'Rejection Reason',
+          input: 'textarea',
+          inputLabel: 'Please specify the reason for rejection',
+          inputPlaceholder: 'Enter rejection reason here...',
+          inputAttributes: {
+            'aria-label': 'Enter rejection reason here'
+          },
+          showCancelButton: true,
+          inputValidator: (value) => {
+            if (!value) {
+              return 'You need to provide a rejection reason!';
+            }
+          }
+        });
+        
+        if (isDismissed || !reason) return; // User cancelled
+        rejectionReason = reason;
+      }
+
       const result = await Swal.fire({
         title: "Update Status",
         text: `Are you sure you want to mark this request as ${newStatus}?`,
@@ -28,11 +111,13 @@ const ResetAccountRequests = ({
 
       if (result.isConfirmed) {
         await axios.put(
-          `${API_BASE_URL}/deped-account-reset-requests/${requestId}/status`,
+          `${API_BASE_URL}/api/depedacc/deped-account-reset-requests/${requestId}/status`,
           {
             status: newStatus,
+            notes: rejectionReason
           }
         );
+        
         await fetchResetAccountRequests();
 
         Swal.fire({
@@ -55,107 +140,114 @@ const ResetAccountRequests = ({
     }
   };
 
+  // Show detailed view of a request
   const handleShowRequestDetails = (request) => {
     // Create status dropdown options
     const statusOptionsHTML = accountStatusOptions
-      .filter((status) => status.toLowerCase() !== request.status.toLowerCase()) // Filter out current status
+      .filter((status) => status.toLowerCase() !== request.status.toLowerCase())
       .map((status) => {
         return `<option value="${status}" style="color: black;">${status}</option>`;
       })
       .join("");
 
     const currentStatusBadge = `
-            <div class="current-status-badge mb-3">
-                <span class="badge rounded-pill" style="background-color: ${getStatusColor(
-                  request.status
-                )}; 
-                      font-size: 0.9rem; padding: 0.5em 1em;">
-                    Current Status: ${request.status}
-                </span>
-            </div>
-        `;
+      <div class="current-status-badge mb-3">
+        <span class="badge rounded-pill" style="background-color: ${getStatusColor(
+          request.status
+        )}; font-size: 0.9rem; padding: 0.5em 1em;">
+          Current Status: ${request.status}
+        </span>
+      </div>
+    `;
+
+    // Add rejection reason section if request was rejected
+    const rejectionReasonSection = request.status.toLowerCase() === 'rejected' && request.notes 
+      ? `
+        <div class="row mb-2">
+          <div class="col-md-4 fw-bold">Rejection Reason:</div>
+          <div class="col-md-8 text-danger rejection-reason">${request.notes}</div>
+        </div>
+        `
+      : '';
 
     Swal.fire({
       title: `Reset Account Request: ${request.id}`,
       html: `
-                <div class="request-details text-start">
-                    <div class="request-info mb-4">
-                    <div class="row mb-2">
-                            <div class="col-md-4 fw-bold">Account Type:</div>
-                            <div class="col-md-8">${request.selected_type}</div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-md-4 fw-bold">Last Name:</div>
-                            <div class="col-md-8">${request.surname}</div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-md-4 fw-bold">First Name:</div>
-                            <div class="col-md-8">${request.first_name}</div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-md-4 fw-bold">Middle Name:</div>
-                            <div class="col-md-8">${formatMiddleName(
-                              request.middle_name
-                            )}</div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-md-4 fw-bold">School:</div>
-                            <div class="col-md-8">${request.school}</div>
-                        </div>
-                        ${
-                          request.school_id
-                            ? `
-                        <div class="row mb-2">
-                            <div class="col-md-4 fw-bold">School ID:</div>
-                            <div class="col-md-8">${request.school_id}</div>
-                        </div>
-                        `
-                            : ""
-                        }
-                        <div class="row mb-2">
-                            <div class="col-md-4 fw-bold">Employee Number:</div>
-                            <div class="col-md-8">${
-                              request.employee_number
-                            }</div>
-                        </div>
-                        <div class="row mb-2">
-                            <div class="col-md-4 fw-bold">Date Created:</div>
-                            <div class="col-md-8">${new Date(
-                              request.created_at
-                            ).toLocaleString()}</div>
-                        </div>
-                    </div>
-                    
-                    <div class="d-flex justify-content-between status-update">
-                        <div>
-                            <h5>Status:</h5>
-                        </div>
-                        
-                        <div class="text-center">
-                            ${currentStatusBadge}
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-between mb-4">
-                        <div>
-                            <h5>Update Status:</h5>
-                        </div>
-                        <div>
-                            <select id="statusDropdown" class="form-select status-dropdown" style="width: 150px;">
-                                <option value="" selected disabled>Change Status</option>
-                                    ${statusOptionsHTML}
-                            </select>
-                        </div>  
-                    </div>
-                    
-                    <div class="d-flex justify-content-center">
-                        <button id="updateStatusBtn" class="btn btn-outline-dark update-status-btn">
-                            Update Status
-                        </button>
-                    </div>
-                    </div>
+        <div class="request-details text-start">
+          <div class="request-info mb-4">
+            <div class="row mb-2">
+              <div class="col-md-4 fw-bold">Account Type:</div>
+              <div class="col-md-8">${request.selected_type}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4 fw-bold">Last Name:</div>
+              <div class="col-md-8">${request.surname}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4 fw-bold">First Name:</div>
+              <div class="col-md-8">${request.first_name}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4 fw-bold">Middle Name:</div>
+              <div class="col-md-8">${formatMiddleName(request.middle_name)}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4 fw-bold">Email:</div>
+              <div class="col-md-8">${formatEmail(getEmailValue(request))}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4 fw-bold">School:</div>
+              <div class="col-md-8">${request.school}</div>
+            </div>
+            ${rejectionReasonSection}
+            ${
+              request.school_id
+                ? `
+                <div class="row mb-2">
+                  <div class="col-md-4 fw-bold">School ID:</div>
+                  <div class="col-md-8">${request.school_id}</div>
                 </div>
-            `,
+                `
+                : ""
+            }
+            <div class="row mb-2">
+              <div class="col-md-4 fw-bold">Employee Number:</div>
+              <div class="col-md-8">${request.employee_number}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4 fw-bold">Date Created:</div>
+              <div class="col-md-8">${new Date(request.created_at).toLocaleString()}</div>
+            </div>
+          </div>
+          
+          <div class="d-flex justify-content-between status-update">
+            <div>
+              <h5>Status:</h5>
+            </div>
+            <div class="text-center">
+              ${currentStatusBadge}
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between mb-4">
+            <div>
+              <h5>Update Status:</h5>
+            </div>
+            <div>
+              <select id="statusDropdown" class="form-select status-dropdown" style="width: 150px;">
+                <option value="" selected disabled>Change Status</option>
+                ${statusOptionsHTML}
+              </select>
+            </div>  
+          </div>
+          
+          <div class="d-flex justify-content-center">
+            <button id="updateStatusBtn" class="btn btn-outline-dark update-status-btn">
+              Update Status
+            </button>
+          </div>
+        </div>
+      `,
       width: "700px",
       customClass: {
         container: "request-swal-container",
@@ -181,108 +273,71 @@ const ResetAccountRequests = ({
     });
   };
 
-  const getStatusBadgeVariant = (status) => {
-    switch (status.toLowerCase()) {
-      case "completed":
-        return "success";
-      case "pending":
-        return "warning";
-      case "on hold":
-        return "secondary";
-      case "in progress":
-        return "primary";
-      case "rejected":
-        return "danger";
-      default:
-        return "secondary";
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
-      case "completed":
-        return "#28a745";
-      case "pending":
-        return "#ffc107";
-      case "on hold":
-        return "#6c757d";
-      case "in progress":
-        return "#007bff";
-      case "rejected":
-        return "#dc3545";
-      default:
-        return "#6c757d";
-    }
-  };
-
-  // Function to display N/A for empty middle names
-  const formatMiddleName = (middleName) => {
-    return middleName && middleName.trim() !== "" ? middleName : "N/A";
-  };
-
+  // Filter and search logic
   const filteredResetAccountRequests = resetAccountRequests
-  .filter((request) => {
-    if (filterStatus === "all") return true;
-    return request.status.toLowerCase() === filterStatus.toLowerCase();
-  })
-  .filter((request) => {
-    if (searchTerm === "") return true;
+    .filter((request) => {
+      if (filterStatus === "all") return true;
+      return request.status.toLowerCase() === filterStatus.toLowerCase();
+    })
+    .filter((request) => {
+      if (!searchTerm || searchTerm === "") return true;
 
-    const searchTermLower = searchTerm.toLowerCase();
+      const searchTermLower = searchTerm.toLowerCase();
 
-    // Search in request number - check if property exists and handle various formats
-    if (request.resetNumber !== undefined) {
-      const resetNumberStr = String(request.resetNumber).toLowerCase();
-      if (resetNumberStr.includes(searchTermLower)) {
+      // Search in request number - check if property exists and handle various formats
+      if (request.resetNumber !== undefined) {
+        const resetNumberStr = String(request.resetNumber).toLowerCase();
+        if (resetNumberStr.includes(searchTermLower)) {
+          return true;
+        }
+      }
+      
+      // Fallback to id if resetNumber is not present
+      if (request.id !== undefined) {
+        const idStr = String(request.id).toLowerCase();
+        if (idStr.includes(searchTermLower)) {
+          return true;
+        }
+      }
+
+      // Search in account type
+      if (
+        request.selected_type &&
+        request.selected_type.toLowerCase().includes(searchTermLower)
+      ) {
         return true;
       }
-    }
-    
-    // Fallback to id if resetNumber is not present
-    if (request.id !== undefined) {
-      const idStr = String(request.id).toLowerCase();
-      if (idStr.includes(searchTermLower)) {
+
+      // Search in name fields (first name, surname, middle name)
+      if (
+        (request.first_name &&
+          request.first_name.toLowerCase().includes(searchTermLower)) ||
+        (request.surname &&
+          request.surname.toLowerCase().includes(searchTermLower)) ||
+        (request.middle_name &&
+          request.middle_name.toLowerCase().includes(searchTermLower))
+      ) {
         return true;
       }
-    }
 
-    // Search in account type
-    if (
-      request.selected_type &&
-      request.selected_type.toLowerCase().includes(searchTermLower)
-    ) {
-      return true;
-    }
+      // Search in email (check both email and reset_email fields)
+      if (
+        (request.email && request.email.toLowerCase().includes(searchTermLower)) ||
+        (request.reset_email && request.reset_email.toLowerCase().includes(searchTermLower))
+      ) {
+        return true;
+      }
 
-    // Search in name fields (first name, surname, middle name)
-    if (
-      (request.first_name &&
-        request.first_name.toLowerCase().includes(searchTermLower)) ||
-      (request.surname &&
-        request.surname.toLowerCase().includes(searchTermLower)) ||
-      (request.middle_name &&
-        request.middle_name.toLowerCase().includes(searchTermLower))
-    ) {
-      return true;
-    }
+      // Search in school
+      if (
+        request.school &&
+        request.school.toLowerCase().includes(searchTermLower)
+      ) {
+        return true;
+      }
 
-    // Search in school
-    if (
-      request.school &&
-      request.school.toLowerCase().includes(searchTermLower)
-    ) {
-      return true;
-    }
-
-    return false;
-  });
-
-  const accountStatusOptions = [
-    "Completed",
-    "Pending",
-    "In Progress",
-    "Rejected",
-  ];
+      return false;
+    });
 
   return (
     <>
@@ -295,7 +350,7 @@ const ResetAccountRequests = ({
         </div>
       ) : (
         <div>
-          {/* Add a header with a badge for the count of filtered requests */}
+          {/* Header with count badge */}
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h5 className="mb-0" style={{ color: "#294a70" }}>
               Reset Account Requests
@@ -308,6 +363,18 @@ const ResetAccountRequests = ({
             </span>
           </div>
 
+          {error && (
+            <div className="alert alert-danger alert-dismissible fade show" role="alert">
+              {error}
+              <button 
+                type="button" 
+                className="btn-close" 
+                onClick={() => setError("")}
+                aria-label="Close"
+              ></button>
+            </div>
+          )}
+
           {filteredResetAccountRequests.length > 0 ? (
             <div className="table-responsive">
               <Table hover className="mb-0 align-middle">
@@ -318,8 +385,8 @@ const ResetAccountRequests = ({
                     <th className="text-center">Last Name</th>
                     <th className="text-center">First Name</th>
                     <th className="text-center">Middle Name</th>
+                    <th className="text-center">Email</th>
                     <th className="text-center">School</th>
-                    {/* <th className="text-center">Employee Number</th> */}
                     <th className="text-center">Status</th>
                     <th className="text-center">Date</th>
                     <th className="text-center">Actions</th>
@@ -328,15 +395,17 @@ const ResetAccountRequests = ({
                 <tbody>
                   {filteredResetAccountRequests.map((request) => (
                     <tr key={request.id}>
-                      <td className="text-center">{request.resetNumber}</td>
+                      <td className="text-center">{request.resetNumber || request.id}</td>
                       <td className="text-center">{request.selected_type}</td>
                       <td className="text-center">{request.surname}</td>
                       <td className="text-center">{request.first_name}</td>
                       <td className="text-center">
                         {formatMiddleName(request.middle_name)}
                       </td>
+                      <td className="text-center">
+                        {formatEmail(getEmailValue(request))}
+                      </td>
                       <td className="text-center">{request.school}</td>
-                      {/* <td className="text-center">{request.employee_number}</td> */}
                       <td className="text-center">
                         <Badge
                           bg={getStatusBadgeVariant(request.status)}
@@ -377,8 +446,16 @@ const ResetAccountRequests = ({
         </div>
       )}
 
-      {/* Add CSS styles similar to the SupportTickets component */}
+      {/* CSS styles */}
       <style jsx>{`
+        .rejection-reason {
+          background-color: #fff8f8;
+          border-left: 4px solid #dc3545;
+          padding: 0.5rem;
+          margin: 0.5rem 0;
+          border-radius: 4px;
+        }
+        
         .status-dropdown {
           padding: 0.5rem;
           border-radius: 4px;

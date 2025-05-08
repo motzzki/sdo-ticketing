@@ -24,7 +24,7 @@ router.use((req, res, next) => {
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, "deped_uploads"));
+    cb(null, path.join(__dirname,'..', "deped_uploads"));
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -108,9 +108,18 @@ router.post("/request-deped-account", (req, res) => {
 // === Reset Request ===
 router.post("/reset-deped-account", (req, res) => {
   const resetNumber = generateResetTicketNumber();
-  const { selectedType, surname, firstName, middleName, school, schoolID, employeeNumber } = req.body;
+  const { 
+    selectedType, 
+    surname, 
+    firstName, 
+    middleName, 
+    school, 
+    schoolID, 
+    employeeNumber,
+    personalEmail // Add this new field
+  } = req.body;
 
-  if (!selectedType || !surname || !firstName || !school || !schoolID || !employeeNumber) {
+  if (!selectedType || !surname || !firstName || !school || !schoolID || !employeeNumber || !personalEmail) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
@@ -118,12 +127,21 @@ router.post("/reset-deped-account", (req, res) => {
 
   const query = `
     INSERT INTO deped_account_reset_requests
-    (resetNumber, selected_type, name, surname, first_name, middle_name, school, school_id, employee_number)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (resetNumber, selected_type, name, surname, first_name, middle_name, school, school_id, employee_number, reset_email)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   conn.query(query, [
-    resetNumber, selectedType, fullName, surname, firstName, middleName || "", school, schoolID, employeeNumber
+    resetNumber, 
+    selectedType, 
+    fullName, 
+    surname, 
+    firstName, 
+    middleName || "", 
+    school, 
+    schoolID, 
+    employeeNumber,
+    personalEmail // Add this to the query parameters
   ], (err, result) => {
     if (err) {
       return res.status(500).json({ error: "Failed to submit reset request", dbError: err.message });
@@ -141,26 +159,56 @@ router.get("/schoolList", (req, res) => {
   });
 });
 
-// === View Requests ===
-router.get("/deped-account-requests", (req, res) => {
-  conn.query("SELECT * FROM deped_account_requests ORDER BY created_at ASC", (err, results) => {
-    if (err) return res.status(500).json({ error: "Failed to fetch account requests" });
+// Get all designations
+router.get("/designations", (req, res) => {
+  const query = "SELECT id, designation FROM designations ORDER BY designation ASC";
+  conn.query(query, (err, results) => {
+    if (err) return res.status(500).json({ error: err.message });
     res.json(results);
   });
 });
 
+// === View Requests ===
+// Add explicit array check and empty array fallback
+router.get("/deped-account-requests", (req, res) => {
+  conn.query("SELECT * FROM deped_account_requests ORDER BY created_at ASC", (err, results) => {
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Failed to fetch account requests" });
+    }
+    console.log('Returning requests:', results);
+    res.json(Array.isArray(results) ? results : []);
+  });
+});
+
+// Same for reset requests
 router.get("/deped-account-reset-requests", (req, res) => {
   conn.query("SELECT * FROM deped_account_reset_requests ORDER BY created_at ASC", (err, results) => {
-    if (err) return res.status(500).json({ error: "Failed to fetch reset requests" });
-    res.json(results);
+    if (err) {
+      console.error("Database error:", err);
+      return res.status(500).json({ error: "Failed to fetch reset requests" });
+    }
+    res.json(Array.isArray(results) ? results : []);
   });
 });
 
 // === Update Status ===
 router.put("/deped-account-requests/:id/status", (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
-  conn.query("UPDATE deped_account_requests SET status = ? WHERE id = ?", [status, id], (err) => {
+  const { status, email_reject_reason } = req.body;
+  
+  let query = "UPDATE deped_account_requests SET status = ?";
+  let params = [status];
+  
+  if (status === 'Rejected' && email_reject_reason) {
+    query += ", email_reject_reason = ?";
+    params.push(email_reject_reason);
+  }
+  
+  query += " WHERE id = ?";
+  params.push(id);
+  
+  conn.query(query, params, (err) => {
     if (err) return res.status(500).json({ error: "Failed to update status" });
     res.json({ message: "Status updated" });
   });
@@ -195,11 +243,12 @@ router.get("/check-transaction", (req, res) => {
   }
 
   const query = isRequest
-    ? "SELECT requestNumber AS number, name, school, status, '' AS notes FROM deped_account_requests WHERE requestNumber = ?"
+    ? "SELECT requestNumber AS number, name, school, status, email_reject_reason AS notes FROM deped_account_requests WHERE requestNumber = ?"
     : "SELECT resetNumber AS number, name, school, status, notes FROM deped_account_reset_requests WHERE resetNumber = ?";
 
   conn.query(query, [number], (err, results) => {
     if (err) return res.status(500).json({ error: "Failed to check transaction" });
+    if (results.length === 0) return res.status(404).json({ error: "Transaction not found" });
     res.json(results);
   });
 });

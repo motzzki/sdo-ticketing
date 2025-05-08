@@ -383,7 +383,7 @@ router.put("/cancelbatch/:batchId", (req, res) => {
   });
 
 
-router.get("/batch/:batchId/devices", (req, res) => {
+router.get("/getbatch/:batchId/devices", (req, res) => {
     const { batchId } = req.params;
     const query = `
         SELECT device_type, device_number

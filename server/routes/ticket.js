@@ -2,16 +2,21 @@ import express from "express";
 import multer from "multer";
 import path from "path";
 import conn from "./conn.js";  // Ensure that your conn.js file is using ES module exports
+import { fileURLToPath } from "url";
 
 const router = express.Router();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const storage = multer.diskStorage({
-    destination: "./uploads/",
-    filename: (req, file, cb) => {
-        // Add timestamp to prevent filename collisions
-        const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        cb(null, `${uniqueSuffix}${path.extname(file.originalname)}`);
-    },
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, '..', 'uploads')); // destination folder
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    cb(null, `${uniqueSuffix}${path.extname(file.originalname)}`); // unique filename
+  },
 });
 
 // Add file filter to restrict file types

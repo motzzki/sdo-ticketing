@@ -83,6 +83,30 @@ const NewAccountRequests = ({
 
   const handleUpdateNewAccountStatus = async (requestId, newStatus) => {
     try {
+      let rejectionReason = '';
+      
+      // If status is Rejected, prompt for rejection reason
+      if (newStatus.toLowerCase() === 'rejected') {
+        const { value: reason } = await Swal.fire({
+          title: 'Rejection Reason',
+          input: 'textarea',
+          inputLabel: 'Please specify the reason for rejection',
+          inputPlaceholder: 'Enter rejection reason here...',
+          inputAttributes: {
+            'aria-label': 'Enter rejection reason here'
+          },
+          showCancelButton: true,
+          inputValidator: (value) => {
+            if (!value) {
+              return 'You need to provide a rejection reason!';
+            }
+          }
+        });
+        
+        if (!reason) return; // User cancelled
+        rejectionReason = reason;
+      }
+  
       const result = await Swal.fire({
         title: "Update Status",
         text: `Are you sure you want to mark this request as ${newStatus}?`,
@@ -93,16 +117,17 @@ const NewAccountRequests = ({
         cancelButtonText: "Cancel",
         reverseButtons: true,
       });
-
+  
       if (result.isConfirmed) {
         await axios.put(
-          `${API_BASE_URL}/deped-account-requests/${requestId}/status`,
+          `${API_BASE_URL}/api/depedacc/deped-account-requests/${requestId}/status`,
           {
             status: newStatus,
+            email_reject_reason: rejectionReason
           }
         );
         await fetchNewAccountRequests();
-
+  
         Swal.fire({
           title: "Status Updated",
           text: `Request status has been updated to ${newStatus}`,
@@ -114,7 +139,7 @@ const NewAccountRequests = ({
     } catch (error) {
       console.error("Error updating request status:", error);
       setError("Failed to update request status");
-
+  
       Swal.fire({
         title: "Error",
         text: "Failed to update request status",
@@ -142,6 +167,16 @@ const NewAccountRequests = ({
             </div>
         `;
 
+    // Add rejection reason section if request was rejected
+    const rejectionReasonSection = request.status.toLowerCase() === 'rejected' && request.email_reject_reason 
+      ? `
+          <div class="row mb-2">
+            <div class="col-md-3 fw-bold">Rejection Reason:</div>
+            <div class="col-md-9 text-danger rejection-reason">${request.email_reject_reason}</div>
+          </div>
+        `
+      : '';
+
     // Count valid files
     const files = {
       endorsement_letter: request.endorsement_letter || "",
@@ -167,6 +202,7 @@ const NewAccountRequests = ({
                             <div class="col-md-3 fw-bold">Account Type:</div>
                             <div class="col-md-9">${request.selected_type}</div>
                         </div>
+                        ${rejectionReasonSection}
                         <div class="row mb-2">
                             <div class="col-md-3 fw-bold">Last Name:</div>
                             <div class="col-md-9">${request.surname}</div>
@@ -333,6 +369,7 @@ const NewAccountRequests = ({
     return middleName && middleName.trim() !== "" ? middleName : "N/A";
   };
 
+  
   const filteredNewAccountRequests = newAccountRequests
   .filter((request) => {
     if (filterStatus === "all") return true;
@@ -522,6 +559,15 @@ const NewAccountRequests = ({
 
       {/* Add CSS styles similar to the SupportTickets component */}
       <style jsx>{`
+
+       /* Add to existing styles */
+  .rejection-reason {
+    background-color: #fff8f8;
+    border-left: 4px solid #dc3545;
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+    border-radius: 4px;
+  }
         .status-dropdown {
           padding: 0.5rem;
           border-radius: 4px;

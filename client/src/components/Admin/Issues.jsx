@@ -26,7 +26,7 @@ const Issues = ({ filterStatus = "all", searchTerm = "" }) => {
   const fetchIssues = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/issues`);
+      const response = await axios.get(`${API_BASE_URL}/api/ticket/issues`);
       setIssues(Array.isArray(response.data) ? response.data : []);
       setError(""); // Clear any previous errors
     } catch (err) {
@@ -58,7 +58,7 @@ const Issues = ({ filterStatus = "all", searchTerm = "" }) => {
     }
 
     try {
-      await axios.post(`${API_BASE_URL}/addIssue`, {
+      await axios.post(`${API_BASE_URL}/api/ticket/addIssue`, {
         issue_name: newIssueName.trim(),
         issue_category: issueCategory
       });
@@ -112,7 +112,7 @@ const Issues = ({ filterStatus = "all", searchTerm = "" }) => {
 
     if (result.isConfirmed) {
       try {
-        await axios.get(`${API_BASE_URL}/deleteissue/${issueId}`);
+        await axios.get(`${API_BASE_URL}/api/ticket/deleteissue/${issueId}`);
 
         // Show success message
         Swal.fire({

@@ -23,7 +23,7 @@ const ResetPassword = () => {
         e.preventDefault();
 
         try {
-            const response = await axios.post(`${API_BASE_URL}/idas-reset`, formData);
+            const response = await axios.post(`${API_BASE_URL}/api/reset/idas-reset`, formData);
             setMessage(response.data.message);
             setFormData({ name: "", school: "", schoolId: "", employeeNumber: "" }); // Clear form
         } catch (error) {

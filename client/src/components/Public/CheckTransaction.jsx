@@ -10,24 +10,44 @@ const CheckTransaction = () => {
   const handleCheckTransaction = async (e) => {
     e.preventDefault();
     setLoading(true);
-
+  
     try {
       const response = await fetch(
-        `${API_BASE_URL}/check-transaction?number=${transactionNumber}`
+        `${API_BASE_URL}/api/depedacc/check-transaction?number=${transactionNumber}`
       );
-
+  
       if (response.ok) {
         const data = await response.json();
-
+  
+        // Check if data is an array and has at least one item
+        if (!Array.isArray(data) || data.length === 0) {
+          Swal.fire({
+            title: "Not Found",
+            text: "No transaction found with that number",
+            icon: "error",
+            confirmButtonText: "Close",
+          });
+          return;
+        }
+  
+        const transaction = data[0]; // Get the first transaction
+        
         let noteMessage = "";
-        if (data.status.toLowerCase() === "completed") {
+        if (transaction.status && transaction.status.toLowerCase() === "completed") {
           noteMessage =
             "<p style='color: green;'>Email sent! Check your email.</p>";
-        } else if (data.status.toLowerCase() === "rejected") {
-          noteMessage =
-            "<p style='color: red;'>Request rejected. Submit a new one.</p>";
+        } else if (transaction.status && transaction.status.toLowerCase() === "rejected") {
+          noteMessage = `
+            <p style='color: red;'>Request rejected. Submit a new one.</p>
+            ${transaction.notes ? `
+              <div style="margin-top: 10px; padding: 10px; background-color: #fff8f8; border-left: 4px solid #dc3545;">
+                <p style="font-weight: bold; margin-bottom: 5px;">Rejection Reason:</p>
+                <p>${transaction.notes}</p>
+              </div>
+            ` : ''}
+          `;
         }
-
+  
         Swal.fire({
           title: "Transaction Details",
           html: `
@@ -37,25 +57,25 @@ const CheckTransaction = () => {
                       <tr>
                           <td style="text-align: left; padding: 8px; font-weight: bold; width: 40%;">Request No:</td>
                           <td style="text-align: left; padding: 8px;">${
-                            data.number
+                            transaction.number || "N/A"
                           }</td>
                       </tr>
                       <tr>
                           <td style="text-align: left; padding: 8px; font-weight: bold;">Name:</td>
                           <td style="text-align: left; padding: 8px;">${
-                            data.name
+                            transaction.name || "N/A"
                           }</td>
                       </tr>
                       <tr>
                           <td style="text-align: left; padding: 8px; font-weight: bold;">School:</td>
                           <td style="text-align: left; padding: 8px;">${
-                            data.school
+                            transaction.school || "N/A"
                           }</td>
                       </tr>
                       <tr>
                           <td style="text-align: left; padding: 8px; font-weight: bold;">Status:</td>
                           <td style="text-align: left; padding: 8px;">${
-                            data.status
+                            transaction.status || "N/A"
                           }</td>
                       </tr>
                   </tbody>
@@ -64,8 +84,10 @@ const CheckTransaction = () => {
           ${
             noteMessage
               ? `
-          <p style="text-align: left; padding: 8px;">${noteMessage}</p>
-      `
+          <div style="margin-top: 20px; text-align: left;">
+            ${noteMessage}
+          </div>
+          `
               : ""
           }
         `,
