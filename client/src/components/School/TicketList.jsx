@@ -82,7 +82,7 @@ const TicketList = ({ status }) => {
             <button 
               class="btn btn-link btn-sm"
               style="padding: 0.25rem 0.5rem; font-size: 0.875rem;"
-              onclick="window.open('${API_BASE_URL}/api/uploads/${filename}', '_blank')"
+              onclick="window.open('${API_BASE_URL}/uploads/${filename}', '_blank')"
             >
               Open File
             </button>

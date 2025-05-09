@@ -231,13 +231,18 @@ const BatchCreate = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-
+  
+    // Reset error state
+    setError("");
+  
+    // Basic validation
     if (!sendDate || !district || !schoolCode || !schoolName) {
       setError("All fields are required.");
       setIsSubmitting(false);
       return;
     }
-
+  
+    // Device validation
     if (
       batchDevices.length === 0 ||
       batchDevices.some((device) => !device.deviceType || !device.serialNumber)
@@ -246,7 +251,8 @@ const BatchCreate = () => {
       setIsSubmitting(false);
       return;
     }
-
+  
+    // Prepare the batch data
     const newBatch = {
       batchNumber,
       sendDate,
@@ -255,38 +261,78 @@ const BatchCreate = () => {
       schoolName,
       devices: batchDevices,
     };
-
+  
     try {
       const response = await axios.post(
         `${API_BASE_URL}/api/batch/createbatch`,
         newBatch
       );
+  
+      // Handle duplicate serial numbers response
+      if (response.data.error && response.data.error === "Duplicate serial numbers found") {
+        Swal.fire({
+          icon: 'error',
+          title: 'Duplicate Serial Numbers',
+          html: `The following serial numbers already exist in the system:<br><br>
+                 ${response.data.duplicates.join('<br>')}<br><br>
+                 Please use different serial numbers or contact support if you need to override this.`,
+          confirmButtonText: 'OK',
+          customClass: {
+            confirmButton: 'btn btn-dark',
+          },
+          buttonsStyling: false
+        });
+        setIsSubmitting(false);
+        return;
+      }
+  
+      // Handle success case
       if (response.status === 200 || response.status === 201) {
-        // Reset form fields after successful submission
+        // Reset form
         resetForm();
-
+        
         // Get the next batch number
         const nextBatchResponse = await axios.get(
           `${API_BASE_URL}/api/batch/nextBatchNumber`
         );
         setBatchNumber(nextBatchResponse.data.nextBatchNumber);
-
-        // Show success message with SweetAlert
-        Swal.fire({
+  
+        // Show success message
+        await Swal.fire({
           icon: 'success',
           title: 'Success!',
           text: 'Batch created successfully!',
+          showConfirmButton: false,
+          timer: 2000
         });
+  
+        // Optional: Reset devices if you want to start fresh
+        setBatchDevices([]);
       } else {
         throw new Error("Failed to create batch");
       }
     } catch (err) {
       console.error("Error creating batch:", err);
-      Swal.fire({
+      
+      // Handle specific error cases
+      let errorMessage = "An error occurred while creating the batch. Please try again.";
+      if (err.response) {
+        if (err.response.status === 400) {
+          errorMessage = err.response.data.error || "Invalid data submitted.";
+        } else if (err.response.status === 500) {
+          errorMessage = "Server error. Please try again later.";
+        }
+      }
+  
+      await Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: err.response?.data?.error ||
-          "An error occurred while creating the batch. Please try again."
+        text: errorMessage,
+        confirmButtonText: 'OK',
+        customClass: {
+          confirmButton: 'btn btn-dark',
+        },
+        buttonsStyling: false
       });
     } finally {
       setIsSubmitting(false);

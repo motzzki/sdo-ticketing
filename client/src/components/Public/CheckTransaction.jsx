@@ -52,7 +52,7 @@ const CheckTransaction = () => {
           title: "Transaction Details",
           html: `
           <div style="display: flex; justify-content: center; margin-top: 20px;">
-              <table style="width: 80%; border-collapse: collapse;">
+              <table style="width: 100%; max-width: 500px; border-collapse: collapse;">
                   <tbody>
                       <tr>
                           <td style="text-align: left; padding: 8px; font-weight: bold; width: 40%;">Request No:</td>
@@ -93,6 +93,8 @@ const CheckTransaction = () => {
         `,
           icon: "info",
           confirmButtonText: "Close",
+          width: '90%',
+          maxWidth: '600px'
         });
       } else {
         const errorData = await response.json();
@@ -118,13 +120,13 @@ const CheckTransaction = () => {
 
   return (
     <Container
-      className="d-flex align-items-center justify-content-center"
+      className="d-flex align-items-center justify-content-center p-3"
       style={{ minHeight: "100vh" }}
     >
       <Card
-        className="m-auto"
+        className="w-100"
         style={{
-          width: "25%",
+          maxWidth: "500px",
           border: "none",
           boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
         }}
@@ -138,7 +140,6 @@ const CheckTransaction = () => {
         <Card.Body>
           <Form onSubmit={handleCheckTransaction}>
             <Form.Group className="mb-3">
-              {/* <Form.Label>Request/Reset Number</Form.Label> */}
               <Form.Control
                 type="text"
                 placeholder="Enter your Request number"

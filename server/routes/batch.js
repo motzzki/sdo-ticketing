@@ -120,50 +120,97 @@ router.post("/adddevice", (req, res) => {
 router.post("/createbatch", (req, res) => {
     const { batchNumber, sendDate, district, schoolCode, schoolName, devices } = req.body;
 
-    // Get current date
-   // Get current date (with time reset to midnight for proper date comparison)
-const currentDate = new Date();
-currentDate.setHours(0, 0, 0, 0);
-
-const sendDateObj = new Date(sendDate);
-sendDateObj.setHours(0, 0, 0, 0);
-
-// Determine batch status based on send date - only past dates are "Delivered"
-const status = sendDateObj < currentDate ? "Delivered" : "Pending";
-    
-    // If the batch is in the past, set received date to the send date
+    // Date handling logic remains the same
+    const currentDate = new Date();
+    currentDate.setHours(0, 0, 0, 0);
+    const sendDateObj = new Date(sendDate);
+    sendDateObj.setHours(0, 0, 0, 0);
+    const status = sendDateObj < currentDate ? "Delivered" : "Pending";
     const receivedDate = status === "Delivered" ? sendDate : null;
 
-    const query = "INSERT INTO tbl_batches (batch_number, send_date, schoolCode, school_name, status, received_date) VALUES (?, ?, ?, ?, ?, ?)";
-    conn.query(
-        query,
-        [batchNumber, sendDate, schoolCode, schoolName, status, receivedDate],
-        (err, result) => {
-            if (err) {
-                console.error("Error creating batch:", err.message);
-                return res.status(500).json({ error: err.message });
-            }
-            const batchId = result.insertId;
+    // Start transaction
+    conn.beginTransaction(err => {
+        if (err) return res.status(500).json({ error: err.message });
 
-            // Insert devices
-            devices.forEach(device => {
-                const deviceQuery = "INSERT INTO tbl_batch_devices (batch_id, device_type, device_number) VALUES (?, ?, ?)";
-                conn.query(
-                    deviceQuery,
-                    [batchId, device.deviceType, device.serialNumber],
-                    (err) => {
-                        if (err) console.error("Error adding device:", err);
+        // Insert batch
+        const batchQuery = "INSERT INTO tbl_batches (batch_number, send_date, schoolCode, school_name, status, received_date) VALUES (?, ?, ?, ?, ?, ?)";
+        conn.query(
+            batchQuery,
+            [batchNumber, sendDate, schoolCode, schoolName, status, receivedDate],
+            (err, result) => {
+                if (err) {
+                    return conn.rollback(() => {
+                        res.status(500).json({ error: err.message });
+                    });
+                }
+
+                const batchId = result.insertId;
+                let devicesProcessed = 0;
+                let duplicateSerials = [];
+
+                // Process each device
+                devices.forEach(device => {
+                    // First check if serial exists in any batch
+                    const checkQuery = "SELECT COUNT(*) as count FROM tbl_batch_devices WHERE device_number = ?";
+                    conn.query(checkQuery, [device.serialNumber], (err, results) => {
+                        if (err) {
+                            console.error("Error checking device:", err);
+                            devicesProcessed++;
+                            if (devicesProcessed === devices.length) {
+                                return finalizeBatch();
+                            }
+                            return;
+                        }
+
+                        if (results[0].count > 0) {
+                            // Serial exists, skip or handle differently
+                            duplicateSerials.push(device.serialNumber);
+                            devicesProcessed++;
+                        } else {
+                            // Serial doesn't exist, insert normally
+                            const insertQuery = "INSERT INTO tbl_batch_devices (batch_id, device_type, device_number) VALUES (?, ?, ?)";
+                            conn.query(
+                                insertQuery,
+                                [batchId, device.deviceType, device.serialNumber],
+                                (err) => {
+                                    if (err) console.error("Error adding device:", err);
+                                    devicesProcessed++;
+                                }
+                            );
+                        }
+
+                        if (devicesProcessed === devices.length) {
+                            finalizeBatch();
+                        }
+                    });
+                });
+
+                function finalizeBatch() {
+                    if (duplicateSerials.length > 0) {
+                        conn.rollback(() => {
+                            res.status(400).json({ 
+                                error: "Duplicate serial numbers found",
+                                duplicates: duplicateSerials
+                            });
+                        });
+                    } else {
+                        conn.commit(err => {
+                            if (err) {
+                                return conn.rollback(() => {
+                                    res.status(500).json({ error: err.message });
+                                });
+                            }
+                            res.json({ 
+                                message: "Batch created!", 
+                                batchId, 
+                                status 
+                            });
+                        });
                     }
-                );
-            });
-
-            res.json({ 
-                message: "Batch created!", 
-                batchId, 
-                status 
-            });
-        }
-    );
+                }
+            }
+        );
+    });
 });
 
 // Server-side route to get next batch number

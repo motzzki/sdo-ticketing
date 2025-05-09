@@ -115,7 +115,7 @@ const ViewBatches = ({ filterStatus = "all", searchTerm = "" }) => {
       });
 
       if (result.isConfirmed) {
-        await axios.put(`${API_BASE_URL}/api/cancelbatch/${batchId}`);
+        await axios.put(`${API_BASE_URL}/api/batch/cancelbatch/${batchId}`);
 
         await Swal.fire({
           title: "Cancelled!",
