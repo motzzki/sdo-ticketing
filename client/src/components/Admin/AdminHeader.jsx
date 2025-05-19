@@ -12,6 +12,8 @@ import { CiViewList } from "react-icons/ci";
 import Swal from "sweetalert2";
 import { MdAddChart } from "react-icons/md";
 import { IoKeyOutline } from "react-icons/io5";
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSchool } from '@fortawesome/free-solid-svg-icons';
 
 const AdminHeader = ({ 
   firstName, 
@@ -238,6 +240,17 @@ const AdminHeader = ({
             <IoKeyOutline className="me-3 fs-5" />
             <span className="fw-medium">Change Password</span>
           </button>
+          <button
+  className={`nav-link text-dark d-flex align-items-center py-3 px-1 hover-effect border-0 bg-transparent w-100 text-start ${activeTab === 'addSchool' ? 'active-nav-item' : ''}`}
+  onClick={() => {
+    setActiveTab('addSchool');
+    setActiveMainTab('');
+    if (width < 768) setShowSidebar(false);
+  }}
+>
+  <FontAwesomeIcon icon={faSchool} className="me-3 fs-5" />
+  <span className="fw-medium">Add School</span>
+</button>
         </div>
       </div>
 

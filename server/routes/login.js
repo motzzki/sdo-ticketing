@@ -145,7 +145,7 @@ router.post("/userlogin", async (req, res) => {
       role: user.role,
     };
 
-    const token = jwt.sign(userData, secretKey, { expiresIn: "1h" });
+    const token = jwt.sign(userData, secretKey);
 
     delete LoginAttempts[username];
     

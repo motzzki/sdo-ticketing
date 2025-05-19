@@ -47,7 +47,7 @@ const ViewBatches = ({ filterStatus = "all", searchTerm = "" }) => {
         `${API_BASE_URL}/api/batch/getbatch/${batchId}/devices`
       );
       const devices = response.data;
-
+  
       if (!Array.isArray(devices) || devices.length === 0) {
         return Swal.fire({
           title: "No Devices",
@@ -55,31 +55,77 @@ const ViewBatches = ({ filterStatus = "all", searchTerm = "" }) => {
           icon: "info",
         });
       }
-
+  
+      // Summarize devices by type
+      const deviceSummary = devices.reduce((acc, device) => {
+        const type = device.device_type || 'Unknown';
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      }, {});
+  
+      // Convert to array for display
+      const summaryArray = Object.entries(deviceSummary).map(([type, count]) => ({
+        type,
+        count
+      }));
+  
       Swal.fire({
         title: "Batch Devices",
         html: `
-          <div class="table-responsive">
-            <table class="table table-hover mb-0">
-              <thead>
-                <tr>
-                  <th class="px-3" style="color: #294a70">Device Type</th>
-                  <th class="px-3" style="color: #294a70">Serial Number</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${devices
-                  .map(
-                    (device) => `
+          <div>
+            <h5 class="mb-3" style="color: #294a70">Device Summary</h5>
+            <div class="table-responsive mb-4">
+              <table class="table table-sm mb-0" style="width: 100%">
+                <thead>
                   <tr>
-                    <td class="px-3">${device.device_type || 'N/A'}</td>
-                    <td class="px-3">${device.device_number || 'N/A'}</td>
+                    <th class="px-3" style="color: #294a70; text-align: left">Device Type</th>
+                    <th class="px-3" style="color: #294a70; text-align: right">Quantity</th>
                   </tr>
-                `
-                  )
-                  .join("")}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  ${summaryArray
+                    .map(
+                      (item) => `
+                    <tr>
+                      <td class="px-3" style="text-align: left">${item.type}</td>
+                      <td class="px-3" style="text-align: right">${item.count}</td>
+                    </tr>
+                  `
+                    )
+                    .join("")}
+                  <tr style="font-weight: bold; border-top: 2px solid #dee2e6">
+                    <td class="px-3" style="text-align: left">Total Devices</td>
+                    <td class="px-3" style="text-align: right">${devices.length}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+  
+            <h5 class="mb-3" style="color: #294a70">Device Details</h5>
+            <div class="table-responsive">
+              <table class="table table-hover mb-0" style="width: 100%">
+                <thead>
+                  <tr>
+                    <th class="px-3" style="color: #294a70">#</th>
+                    <th class="px-3" style="color: #294a70">Device Type</th>
+                    <th class="px-3" style="color: #294a70">Serial Number</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${devices
+                    .map(
+                      (device, index) => `
+                    <tr>
+                      <td class="px-3">${index + 1}</td>
+                      <td class="px-3">${device.device_type || 'N/A'}</td>
+                      <td class="px-3">${device.device_number || 'N/A'}</td>
+                    </tr>
+                  `
+                    )
+                    .join("")}
+                </tbody>
+              </table>
+            </div>
           </div>
         `,
         width: "800px",

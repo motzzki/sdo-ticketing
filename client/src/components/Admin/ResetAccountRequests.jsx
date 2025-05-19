@@ -66,9 +66,13 @@ const ResetAccountRequests = ({
     return email && email.trim() !== "" ? email : "N/A";
   };
   
-  // Get the email value correctly from either email or reset_email field
-  const getEmailValue = (request) => {
-    return request.reset_email || request.email || "N/A";
+  // Get email values
+  const getPersonalEmail = (request) => {
+    return request.reset_email || request.personalEmail || "N/A";
+  };
+
+  const getDepedEmail = (request) => {
+    return request.deped_email || "N/A";
   };
 
   // Handle request status updates
@@ -76,7 +80,6 @@ const ResetAccountRequests = ({
     try {
       let rejectionReason = '';
       
-      // If status is Rejected, prompt for rejection reason
       if (newStatus.toLowerCase() === 'rejected') {
         const { value: reason, isDismissed } = await Swal.fire({
           title: 'Rejection Reason',
@@ -94,7 +97,7 @@ const ResetAccountRequests = ({
           }
         });
         
-        if (isDismissed || !reason) return; // User cancelled
+        if (isDismissed || !reason) return;
         rejectionReason = reason;
       }
 
@@ -142,7 +145,6 @@ const ResetAccountRequests = ({
 
   // Show detailed view of a request
   const handleShowRequestDetails = (request) => {
-    // Create status dropdown options
     const statusOptionsHTML = accountStatusOptions
       .filter((status) => status.toLowerCase() !== request.status.toLowerCase())
       .map((status) => {
@@ -160,7 +162,6 @@ const ResetAccountRequests = ({
       </div>
     `;
 
-    // Add rejection reason section if request was rejected
     const rejectionReasonSection = request.status.toLowerCase() === 'rejected' && request.notes 
       ? `
         <div class="row mb-2">
@@ -192,8 +193,12 @@ const ResetAccountRequests = ({
               <div class="col-md-8">${formatMiddleName(request.middle_name)}</div>
             </div>
             <div class="row mb-2">
-              <div class="col-md-4 fw-bold">Email:</div>
-              <div class="col-md-8">${formatEmail(getEmailValue(request))}</div>
+              <div class="col-md-4 fw-bold">Personal Email:</div>
+              <div class="col-md-8">${formatEmail(getPersonalEmail(request))}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-md-4 fw-bold">DepEd Email:</div>
+              <div class="col-md-8">${formatEmail(getDepedEmail(request))}</div>
             </div>
             <div class="row mb-2">
               <div class="col-md-4 fw-bold">School:</div>
@@ -257,7 +262,6 @@ const ResetAccountRequests = ({
       showConfirmButton: false,
       showCloseButton: true,
       didOpen: () => {
-        // Add event listener for update status button
         const updateBtn = document.getElementById("updateStatusBtn");
         const statusDropdown = document.getElementById("statusDropdown");
 
@@ -284,7 +288,6 @@ const ResetAccountRequests = ({
 
       const searchTermLower = searchTerm.toLowerCase();
 
-      // Search in request number - check if property exists and handle various formats
       if (request.resetNumber !== undefined) {
         const resetNumberStr = String(request.resetNumber).toLowerCase();
         if (resetNumberStr.includes(searchTermLower)) {
@@ -292,7 +295,6 @@ const ResetAccountRequests = ({
         }
       }
       
-      // Fallback to id if resetNumber is not present
       if (request.id !== undefined) {
         const idStr = String(request.id).toLowerCase();
         if (idStr.includes(searchTermLower)) {
@@ -300,7 +302,6 @@ const ResetAccountRequests = ({
         }
       }
 
-      // Search in account type
       if (
         request.selected_type &&
         request.selected_type.toLowerCase().includes(searchTermLower)
@@ -308,7 +309,6 @@ const ResetAccountRequests = ({
         return true;
       }
 
-      // Search in name fields (first name, surname, middle name)
       if (
         (request.first_name &&
           request.first_name.toLowerCase().includes(searchTermLower)) ||
@@ -320,15 +320,14 @@ const ResetAccountRequests = ({
         return true;
       }
 
-      // Search in email (check both email and reset_email fields)
       if (
-        (request.email && request.email.toLowerCase().includes(searchTermLower)) ||
-        (request.reset_email && request.reset_email.toLowerCase().includes(searchTermLower))
+        (request.reset_email && request.reset_email.toLowerCase().includes(searchTermLower)) ||
+        (request.personalEmail && request.personalEmail.toLowerCase().includes(searchTermLower)) ||
+        (request.deped_email && request.deped_email.toLowerCase().includes(searchTermLower))
       ) {
         return true;
       }
 
-      // Search in school
       if (
         request.school &&
         request.school.toLowerCase().includes(searchTermLower)
@@ -350,7 +349,6 @@ const ResetAccountRequests = ({
         </div>
       ) : (
         <div>
-          {/* Header with count badge */}
           <div className="d-flex justify-content-between align-items-center mb-3">
             <h5 className="mb-0" style={{ color: "#294a70" }}>
               Reset Account Requests
@@ -385,7 +383,8 @@ const ResetAccountRequests = ({
                     <th className="text-center">Last Name</th>
                     <th className="text-center">First Name</th>
                     <th className="text-center">Middle Name</th>
-                    <th className="text-center">Email</th>
+                    <th className="text-center">Personal Email</th>
+                    <th className="text-center">DepEd Email</th>
                     <th className="text-center">School</th>
                     <th className="text-center">Status</th>
                     <th className="text-center">Date</th>
@@ -403,7 +402,10 @@ const ResetAccountRequests = ({
                         {formatMiddleName(request.middle_name)}
                       </td>
                       <td className="text-center">
-                        {formatEmail(getEmailValue(request))}
+                        {formatEmail(getPersonalEmail(request))}
+                      </td>
+                      <td className="text-center">
+                        {formatEmail(getDepedEmail(request))}
                       </td>
                       <td className="text-center">{request.school}</td>
                       <td className="text-center">
@@ -446,7 +448,6 @@ const ResetAccountRequests = ({
         </div>
       )}
 
-      {/* CSS styles */}
       <style jsx>{`
         .rejection-reason {
           background-color: #fff8f8;

@@ -107,4 +107,75 @@ router.post("/change-password", authenticateToken, async (req, res) => {
     }
 });
 
+// Update /users/schools route
+router.get("/schools", authenticateToken, async (req, res) => {
+    try {
+        const [rows] = await conn.promise().query(
+           "SELECT userId, username, school FROM tbl_users WHERE role = 'Staff' ORDER BY school"
+        );
+        
+        res.status(200).json(rows);
+    } catch (error) {
+        console.error("Database error:", error);
+        res.status(500).json({ message: "Internal server error." });
+    }
+});
+
+// Update /reset-school-password route
+router.post("/reset-school-password", authenticateToken, async (req, res) => {
+    try {
+        const { school } = req.body; // using `school` instead of `schoolId`
+        if (!school) {
+            return res.status(400).json({ message: "School name is required." });
+        }
+
+        const hashedPassword = await bcrypt.hash("password123", 10);
+        await conn.promise().query(
+            "UPDATE tbl_users SET password = ? WHERE school = ? AND role = 'Staff'",
+            [hashedPassword, school]
+        );
+
+        res.status(200).json({ message: "School password reset successfully." });
+    } catch (error) {
+        console.error("Database error:", error);
+        res.status(500).json({ message: "Internal server error." });
+    }
+});
+
+// Add this to your backend routes
+router.post('/addschools', authenticateToken, async (req, res) => {
+  try {
+    const { username, password, district, schoolCode, school, address, principal, number, email } = req.body;
+
+    // Check if username already exists
+    const [existing] = await conn.promise().query(
+      'SELECT userId FROM tbl_users WHERE username = ?',
+      [username]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({ message: 'Username already exists' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Insert new school
+    const [result] = await conn.promise().query(
+      `INSERT INTO tbl_users 
+      (username, password, district, schoolCode, school, address, principal, number, email, role) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Staff')`,
+      [username, hashedPassword, district, schoolCode, school, address, principal, number, email]
+    );
+
+    res.status(201).json({
+      message: 'School created successfully',
+      userId: result.insertId
+    });
+  } catch (error) {
+    console.error('Database error:', error);
+    res.status(500).json({ message: error });
+  }
+});
+
 export default router;

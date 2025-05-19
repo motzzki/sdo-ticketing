@@ -179,7 +179,7 @@ const Navbar = () => {
             >
               <div className="d-flex align-items-center">
                 <TbTruckDelivery className="me-3 fs-5" />
-                <span style={{fontSize: '15px'}}>Batch Management</span>
+                <span style={{fontSize: '15px'}}>DCP Package</span>
               </div>
               <MdKeyboardArrowDown 
                 className={`fs-5 transition-transform ${showBatchDropdown ? 'rotate-180' : ''}`}

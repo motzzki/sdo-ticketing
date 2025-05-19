@@ -25,6 +25,7 @@ import Batches from "./components/Admin/Batches";
 import BatchCreate from "./components/Admin/BatchCreate";
 import Issues from "./components/Admin/Issues";
 import AdminChangePassword from "./components/Admin/AdminChangePassword";
+import AddSchool from "./components/Admin/AddSchool";
 
 // Public
 import Forbidden from "./components/Public/Forbidden";
@@ -140,6 +141,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={["Admin"]}>
                 <Issues />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/addschool"
+            element={
+              <ProtectedRoute allowedRoles={["Admin"]}>
+                <AddSchool />
               </ProtectedRoute>
             }
           />

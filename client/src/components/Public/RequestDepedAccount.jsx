@@ -33,6 +33,7 @@ const RequestDepedAccount = () => {
     personalGmail: "",
     employeeNumber: "",
     personalEmail: '',
+    deped_email: '', // Changed to match backend
     proofOfIdentity: null,
     prcID: null,
     endorsementLetter: null,
@@ -214,7 +215,8 @@ const RequestDepedAccount = () => {
       employeeNumber,
       designation,
       personalGmail,
-      personalEmail, // Now properly included
+      personalEmail,
+      deped_email, // Changed to match backend
       proofOfIdentity,
       prcID,
       endorsementLetter,
@@ -264,6 +266,20 @@ const RequestDepedAccount = () => {
         return;
       }
     } else if (requestType === "reset") {
+      // Validate DepEd email format
+      if (!deped_email.endsWith('@deped.gov.ph')) {
+        setError("DepEd email must end with @deped.gov.ph");
+        setIsSubmitting(false);
+        return;
+      }
+    
+      // Validate required fields
+      if (!employeeNumber || !personalEmail || !deped_email) {
+        setError("Please provide employee number and both email addresses");
+        setIsSubmitting(false);
+        return;
+      }
+    
       endpoint = `${API_BASE_URL}/api/depedacc/reset-deped-account`;
       body = JSON.stringify({
         selectedType: selectedType,
@@ -273,19 +289,14 @@ const RequestDepedAccount = () => {
         school: school,
         schoolID: schoolID,
         employeeNumber: employeeNumber,
-        personalEmail: personalEmail // Now properly included
+        personalEmail: personalEmail,
+        deped_email: deped_email // Changed to match backend
       });
       options.headers = {
         "Content-Type": "application/json",
         Accept: "application/json",
       };
       options.body = body;
-  
-      if (!employeeNumber || !personalEmail) {
-        setError("Please provide both employee number and personal email");
-        setIsSubmitting(false);
-        return;
-      }
     }
   
     try {
@@ -306,6 +317,7 @@ const RequestDepedAccount = () => {
         });
   
         // Reset form with personalEmail included
+        // In the success handler where you reset the form
         setFormData({
           requestType: "",
           selectedType: "",
@@ -317,6 +329,7 @@ const RequestDepedAccount = () => {
           schoolID: "",
           personalGmail: "",
           personalEmail: "",
+          deped_email: "", // Changed to match backend
           employeeNumber: "",
           proofOfIdentity: null,
           prcID: null,
@@ -1121,8 +1134,32 @@ const RequestDepedAccount = () => {
         </Form.Text>
       </Col>
     </Form.Group>
+
+    
+    <Form.Group as={Row} className="mb-3">
+  <Form.Label column xs={12} sm={12} md={3} lg={2}>
+    DepEd Email
+  </Form.Label>
+  <Col xs={12} sm={12} md={9} lg={10}>
+    <FloatingLabel label="DepEd Email to be reset">
+      <Form.Control
+        type="email"
+        name="deped_email" // Changed to match backend
+        value={formData.deped_email}
+        onChange={handleChange}
+        required
+        placeholder="Enter your DepEd email address to be reset"
+      />
+    </FloatingLabel>
+    <Form.Text className="text-muted">
+      The DepEd email account you want to reset (must end with @deped.gov.ph)
+    </Form.Text>
+  </Col>
+</Form.Group>
   </>
 )}
+
+
                     
 
                 </>

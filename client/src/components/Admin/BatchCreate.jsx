@@ -25,13 +25,10 @@ const BatchCreate = () => {
   const [sendDate, setSendDate] = useState("");
   const [batchNumber, setBatchNumber] = useState("");
   const [error, setError] = useState("");
-  const [batchCounter, setBatchCounter] = useState(1);
-  const [currentDate, setCurrentDate] = useState("");
   const [devices, setDevices] = useState([]);
   const [batchDevices, setBatchDevices] = useState([]);
   const [newDeviceName, setNewDeviceName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  // Track the device index when adding a new device
   const [currentDeviceIndex, setCurrentDeviceIndex] = useState(null);
 
   useEffect(() => {
@@ -56,27 +53,7 @@ const BatchCreate = () => {
         console.error(err);
         setError("Error fetching device types.");
       });
-
-    const today = new Date();
-    const todayDate = today.toISOString().split("T")[0].replace(/-/g, "");
-    setCurrentDate(todayDate);
   }, [district]);
-
-  useEffect(() => {
-    const fetchNextBatchNumber = async () => {
-      try {
-        const response = await axios.get(
-          `${API_BASE_URL}/api/batch/nextBatchNumber`
-        );
-        setBatchNumber(response.data.nextBatchNumber);
-      } catch (err) {
-        console.error("Error fetching next batch number:", err);
-        setError("Error generating batch number.");
-      }
-    };
-
-    fetchNextBatchNumber();
-  }, []);
 
   const handleDistrictChange = (e) => {
     setDistrict(e.target.value);
@@ -92,8 +69,6 @@ const BatchCreate = () => {
       const response = await axios.get(`${API_BASE_URL}/api/batch/deletedevice/${encodeURIComponent(deviceName)}`);
       if (response.data.success) {
         console.log("Device deleted successfully");
-
-        // Remove the deleted device from the state
         setDevices((prevDevices) => prevDevices.filter(device => device.device_name !== deviceName));
       } else {
         console.error("Error deleting device:", response.data.error);
@@ -127,18 +102,12 @@ const BatchCreate = () => {
     }
   };
 
-  const generateBatchNumber = () => {
-    const counterFormatted = batchCounter.toString().padStart(4, "0");
-    return `${currentDate}-${counterFormatted}`;
-  };
-
   const handleAddDevice = () => {
     setBatchDevices([...batchDevices, { deviceType: "", serialNumber: "" }]);
   };
 
   const handleDeviceChange = (index, field, value) => {
     if (value === "new") {
-      // Store the current index for reference when adding a new device
       setCurrentDeviceIndex(index);
       showAddDeviceModal();
       return;
@@ -181,19 +150,15 @@ const BatchCreate = () => {
           device_name: deviceName,
         };
 
-        // Add new device to the list
         setDevices(prevDevices => [...prevDevices, newDevice]);
 
-        // Auto-select the newly created device for the current row
         if (currentDeviceIndex !== null) {
           const updatedBatchDevices = [...batchDevices];
           updatedBatchDevices[currentDeviceIndex] = {
             ...updatedBatchDevices[currentDeviceIndex],
             deviceType: deviceName
           };
-          setBatchDevices(updatedBatchDevices);
-
-          // Reset currentDeviceIndex after using it
+          setBatchDevices(updatedDevices);
           setCurrentDeviceIndex(null);
         }
 
@@ -224,6 +189,7 @@ const BatchCreate = () => {
     setSchoolCode("");
     setSchoolName("");
     setSendDate("");
+    setBatchNumber("");
     setBatchDevices([]);
     setError("");
   };
@@ -231,17 +197,24 @@ const BatchCreate = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-  
+    
     // Reset error state
     setError("");
-  
+    
     // Basic validation
-    if (!sendDate || !district || !schoolCode || !schoolName) {
+    if (!batchNumber || !sendDate || !district || !schoolCode || !schoolName) {
       setError("All fields are required.");
       setIsSubmitting(false);
       return;
     }
   
+    // Batch number validation (now allows letters, numbers, hyphens, and spaces)
+    if (!/^[a-zA-Z0-9-\s]+$/.test(batchNumber)) {
+      setError("Batch number can only contain letters, numbers, hyphens, and spaces.");
+      setIsSubmitting(false);
+      return;
+    }
+    
     // Device validation
     if (
       batchDevices.length === 0 ||
@@ -251,7 +224,7 @@ const BatchCreate = () => {
       setIsSubmitting(false);
       return;
     }
-  
+    
     // Prepare the batch data
     const newBatch = {
       batchNumber,
@@ -261,42 +234,18 @@ const BatchCreate = () => {
       schoolName,
       devices: batchDevices,
     };
-  
+    
     try {
       const response = await axios.post(
         `${API_BASE_URL}/api/batch/createbatch`,
         newBatch
       );
   
-      // Handle duplicate serial numbers response
-      if (response.data.error && response.data.error === "Duplicate serial numbers found") {
-        Swal.fire({
-          icon: 'error',
-          title: 'Duplicate Serial Numbers',
-          html: `The following serial numbers already exist in the system:<br><br>
-                 ${response.data.duplicates.join('<br>')}<br><br>
-                 Please use different serial numbers or contact support if you need to override this.`,
-          confirmButtonText: 'OK',
-          customClass: {
-            confirmButton: 'btn btn-dark',
-          },
-          buttonsStyling: false
-        });
-        setIsSubmitting(false);
-        return;
-      }
-  
       // Handle success case
       if (response.status === 200 || response.status === 201) {
         // Reset form
         resetForm();
         
-        // Get the next batch number
-        const nextBatchResponse = await axios.get(
-          `${API_BASE_URL}/api/batch/nextBatchNumber`
-        );
-        setBatchNumber(nextBatchResponse.data.nextBatchNumber);
-  
         // Show success message
         await Swal.fire({
           icon: 'success',
@@ -308,38 +257,50 @@ const BatchCreate = () => {
   
         // Optional: Reset devices if you want to start fresh
         setBatchDevices([]);
-      } else {
-        throw new Error("Failed to create batch");
       }
     } catch (err) {
       console.error("Error creating batch:", err);
       
       // Handle specific error cases
       let errorMessage = "An error occurred while creating the batch. Please try again.";
-      if (err.response) {
+      
+      // Handle duplicate serial numbers case
+      if (err.response?.data?.error === "Duplicate serial numbers found") {
+        await Swal.fire({
+          icon: 'error',
+          title: 'Duplicate Serial Numbers',
+          html: `The following serial numbers already exist in the system:<br><br>
+                 ${err.response.data.duplicates.join('<br>')}<br><br>
+                 Please use different serial numbers or contact support if you need to override this.`,
+          confirmButtonText: 'OK',
+          customClass: {
+            confirmButton: 'btn btn-dark',
+          },
+          buttonsStyling: false
+        });
+      } else if (err.response) {
+        // Handle other error types
         if (err.response.status === 400) {
           errorMessage = err.response.data.error || "Invalid data submitted.";
         } else if (err.response.status === 500) {
           errorMessage = "Server error. Please try again later.";
         }
+        
+        await Swal.fire({
+          icon: 'error',
+          title: 'Error',
+          text: errorMessage,
+          confirmButtonText: 'OK',
+          customClass: {
+            confirmButton: 'btn btn-dark',
+          },
+          buttonsStyling: false
+        });
       }
-  
-      await Swal.fire({
-        icon: 'error',
-        title: 'Error',
-        text: errorMessage,
-        confirmButtonText: 'OK',
-        customClass: {
-          confirmButton: 'btn btn-dark',
-        },
-        buttonsStyling: false
-      });
     } finally {
       setIsSubmitting(false);
     }
   };
-
-
   return (
     <div
       className="batch-container"
@@ -392,6 +353,7 @@ const BatchCreate = () => {
                         value={schoolCode}
                         onChange={handleSchoolChange}
                         disabled={!district}
+                        required
                       >
                         <option value="">Select School</option>
                         {Array.isArray(schools) &&
@@ -414,6 +376,7 @@ const BatchCreate = () => {
                         type="date"
                         value={sendDate}
                         onChange={(e) => setSendDate(e.target.value)}
+                        required
                       ></Form.Control>
                     </Col>
                   </Row>
@@ -424,7 +387,13 @@ const BatchCreate = () => {
                       Batch Number:
                     </Form.Label>
                     <Col xs={12} sm={9} md={12}>
-                      <Form.Control type="text" value={batchNumber} disabled />
+                      <Form.Control 
+                        type="text" 
+                        value={batchNumber} 
+                        onChange={(e) => setBatchNumber(e.target.value)}
+                        placeholder="Enter batch number"
+                        required
+                      />
                     </Col>
                   </Row>
 
@@ -459,8 +428,8 @@ const BatchCreate = () => {
                                       variant="danger"
                                       size="sm"
                                       onClick={(e) => {
-                                        e.stopPropagation(); // Prevent dropdown from closing
-                                        console.log("Clicked delete for device:", deviceOption.device_name); // Debugging log
+                                        e.stopPropagation();
+                                        console.log("Clicked delete for device:", deviceOption.device_name);
                                         handleDelete(deviceOption.device_name);
                                       }}
                                     >
@@ -489,6 +458,7 @@ const BatchCreate = () => {
                             onChange={(e) =>
                               handleDeviceChange(index, "serialNumber", e.target.value)
                             }
+                            required
                           />
                         </Col>
 

@@ -13,6 +13,7 @@ import AdminHeader from "./AdminHeader";
 import ViewBatches from "./ViewBatches";
 import Issues from "./Issues";
 import AdminChangePassword from "./AdminChangePassword";
+import AddSchool from "./AddSchool";
 import { useWindowSize } from "react-use";
 import { API_BASE_URL } from "../../config";
 
@@ -30,7 +31,7 @@ const AdminDashboard = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("tickets");
-  const [activeMainTab, setActiveMainTab] = useState("ticketing"); // Track the active main tab
+  const [activeMainTab, setActiveMainTab] = useState("ticketing");
   const { width } = useWindowSize();
 
   useEffect(() => {
@@ -61,84 +62,56 @@ const AdminDashboard = () => {
           'Cache-Control': 'no-cache',
           'Pragma': 'no-cache',
           'Expires': '0',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // Add auth header
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        params: {
-          timestamp: Date.now() // Add timestamp to prevent caching
-        }
+        params: { timestamp: Date.now() }
       });
-  
-      let data = response.data;
-  
-      // Handle non-array responses
-      if (!Array.isArray(data)) {
-        data = []; // Default to empty array
-      }
-  
-      setTickets(data);
+      setTickets(Array.isArray(response.data) ? response.data : []);
       setError("");
     } catch (error) {
       console.error("Error fetching tickets:", error);
       setError("Failed to load tickets. Please try again later.");
-      setTickets([]); // Ensure we always have an array
+      setTickets([]);
     } finally {
       setLoading(false);
     }
   };
 
- const fetchNewAccountRequests = async () => {
-  try {
-    const response = await axios.get(
-      `${API_BASE_URL}/api/depedacc/deped-account-requests`,
-      {
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache',
-          'Expires': '0',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        params: {
-          timestamp: Date.now()
+  const fetchNewAccountRequests = async () => {
+    try {
+      const response = await axios.get(
+        `${API_BASE_URL}/api/depedacc/deped-account-requests`,
+        {
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          params: { timestamp: Date.now() }
         }
-      }
-    );
-    
-    let data = response.data;
-    if (!Array.isArray(data)) {
-      data = [];
+      );
+      setNewAccountRequests(Array.isArray(response.data) ? response.data : []);
+      setError("");
+    } catch (error) {
+      console.error("Error fetching new account requests:", error);
+      setError("Failed to load new account requests.");
+      setNewAccountRequests([]);
     }
-    setNewAccountRequests(data);
-    setError("");
-  } catch (error) {
-    console.error("Error fetching new account requests:", error);
-    setError("Failed to load new account requests. Please try again later.");
-    setNewAccountRequests([]);
-  }
-};
+  };
 
-  // Fetch reset account requests
   const fetchResetAccountRequests = async () => {
     try {
       const response = await axios.get(
         `${API_BASE_URL}/api/depedacc/deped-account-reset-requests`
       );
-      let data = response.data;
-  
-      // Handle non-array responses
-      if (!Array.isArray(data)) {
-        data = [];
-      }
-  
-      setResetAccountRequests(data);
+      setResetAccountRequests(Array.isArray(response.data) ? response.data : []);
       setError("");
     } catch (error) {
       console.error("Error fetching reset account requests:", error);
-      setError("Failed to load reset account requests. Please try again later.");
-      setResetAccountRequests([]); // Ensure we always have an array
+      setError("Failed to load reset account requests.");
+      setResetAccountRequests([]);
     }
   };
 
-  // Fetch all data
   const fetchAllData = async () => {
     setLoading(true);
     await Promise.all([
@@ -155,82 +128,54 @@ const AdminDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Update active main tab when active tab changes
   useEffect(() => {
-    // Map sub-tabs to their parent main tabs
     if (['tickets', 'newAccounts', 'resetAccounts'].includes(activeTab)) {
       setActiveMainTab('ticketing');
     } else if (['batchCreate', 'viewBatches'].includes(activeTab)) {
       setActiveMainTab('dcp');
     } else {
-      setActiveMainTab(''); // For standalone tabs
+      setActiveMainTab('');
     }
   }, [activeTab]);
 
-  const statusOptions = [
-    "Completed",
-    "Pending",
-    "On Hold",
-    "In Progress",
-    "Rejected",
-  ];
-  const accountStatusOptions = [
-    "Completed",
-    "Pending",
-    "In Progress",
-    "Rejected",
-  ];
+  const statusOptions = ["Completed", "Pending", "On Hold", "In Progress", "Rejected"];
+  const accountStatusOptions = ["Completed", "Pending", "In Progress", "Rejected"];
   const viewBatchOptions = ["Delivered", "Pending"];
-  const issuesCategoryOptions = ["Hardware", "Software"]; // Added category options for issues
+  const issuesCategoryOptions = ["Hardware", "Software"];
 
-  // Handle tab change from header
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    // Reset filter and search when changing tabs
     setFilterStatus("all");
     setSearchTerm("");
   };
 
-  // Determine if search/filter should be visible
   const shouldShowSearchFilter =
-    activeTab !== "batchCreate" && activeTab !== "adminchangepass";
+    activeTab !== "batchCreate" && 
+    activeTab !== "adminchangepass" &&
+    activeTab !== "addSchool";
 
-  // Get search placeholder based on active tab
   const getSearchPlaceholder = () => {
     switch (activeTab) {
-      case "issues":
-        return "Enter issue name";
-      case "tickets":
-        return "Enter No. or Requestor or Category";
-      case "newAccounts":
-        return "Enter No. or Type or Name or School";
-      case "resetAccounts":
-        return "Enter No. or Type or Name or School";
-      case "viewBatches":
-        return "Enter No.	or School Name	or School Code";
-      default:
-        return "Search";
+      case "issues": return "Enter issue name";
+      case "tickets": return "Enter No. or Requestor or Category";
+      case "newAccounts": return "Enter No. or Type or Name or School";
+      case "resetAccounts": return "Enter No. or Type or Name or School";
+      case "viewBatches": return "Enter No. or School Name or School Code";
+      default: return "Search";
     }
   };
 
-  // Get filter options based on active tab
   const getFilterOptions = () => {
     switch (activeTab) {
-      case "tickets":
-        return statusOptions;
+      case "tickets": return statusOptions;
       case "newAccounts":
-      case "resetAccounts":
-        return accountStatusOptions;
-      case "viewBatches":
-        return viewBatchOptions;
-      case "issues":
-        return issuesCategoryOptions;
-      default:
-        return [];
+      case "resetAccounts": return accountStatusOptions;
+      case "viewBatches": return viewBatchOptions;
+      case "issues": return issuesCategoryOptions;
+      default: return [];
     }
   };
 
-  // Get breadcrumb based on active tab
   const getBreadcrumb = () => {
     if (activeTab === 'tickets' || activeTab === 'newAccounts' || activeTab === 'resetAccounts') {
       return (
@@ -260,9 +205,18 @@ const AdminDashboard = () => {
           </nav>
         </div>
       );
+    } else if (activeTab === 'addSchool') {
+      return (
+        <div className="mb-3">
+          <nav aria-label="breadcrumb">
+            <ol className="breadcrumb">
+              <li className="breadcrumb-item">School Management</li>
+              <li className="breadcrumb-item active">Add New User</li>
+            </ol>
+          </nav>
+        </div>
+      );
     }
-    
-    // For standalone tabs
     return null;
   };
 
@@ -276,7 +230,6 @@ const AdminDashboard = () => {
               transition: margin-left 0.3s ease-in-out;
             }
           }
-
           .search-filter-container {
             background-color: white;
             padding: 15px;
@@ -284,17 +237,11 @@ const AdminDashboard = () => {
             margin-bottom: 20px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
           }
-          
           .breadcrumb {
             background-color: #f8f9fa;
             padding: 0.75rem 1rem;
             border-radius: 0.25rem;
           }
-          
-          .breadcrumb-item {
-            color: #6c757d;
-          }
-          
           .breadcrumb-item.active {
             color: #344767;
             font-weight: 500;
@@ -302,7 +249,6 @@ const AdminDashboard = () => {
         `}
       </style>
 
-      {/* Admin Header Component */}
       <AdminHeader
         firstName={firstName}
         lastName={lastName}
@@ -314,22 +260,16 @@ const AdminDashboard = () => {
         setActiveMainTab={setActiveMainTab}
       />
 
-      {/* Main Content */}
-      <div
-        className="main-content"
-        style={{
-          marginLeft: width >= 768 ? "250px" : "0",
-          marginTop: "60px",
-          padding: "20px",
-          transition: "margin-left 0.3s ease-in-out",
-        }}
-      >
+      <div className="main-content" style={{
+        marginLeft: width >= 768 ? "250px" : "0",
+        marginTop: "60px",
+        padding: "20px",
+        transition: "margin-left 0.3s ease-in-out"
+      }}>
         {error && <Alert variant="danger">{error}</Alert>}
 
-        {/* Breadcrumb Navigation */}
         {getBreadcrumb()}
 
-        {/* Search and Filter - Only show if not on BatchCreate tab */}
         {shouldShowSearchFilter && (
           <div className="row search-filter-container flex-wrap">
             <div className="col-6 d-flex justify-content-start">
@@ -353,16 +293,13 @@ const AdminDashboard = () => {
                   All {activeTab === "issues" ? "Categories" : "Status"}
                 </option>
                 {getFilterOptions().map((option) => (
-                  <option key={option} value={option}>
-                    {option}
-                  </option>
+                  <option key={option} value={option}>{option}</option>
                 ))}
               </Form.Select>
             </div>
           </div>
         )}
 
-        {/* Content Based on Active Tab */}
         <Tab.Container activeKey={activeTab}>
           <Tab.Content>
             <Tab.Pane eventKey="tickets">
@@ -412,6 +349,10 @@ const AdminDashboard = () => {
 
             <Tab.Pane eventKey="adminchangepass">
               <AdminChangePassword />
+            </Tab.Pane>
+
+            <Tab.Pane eventKey="addSchool">
+              <AddSchool />
             </Tab.Pane>
           </Tab.Content>
         </Tab.Container>

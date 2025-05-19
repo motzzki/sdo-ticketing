@@ -116,19 +116,27 @@ router.post("/reset-deped-account", (req, res) => {
     school, 
     schoolID, 
     employeeNumber,
-    personalEmail // Add this new field
+    personalEmail,
+    deped_email // Add this new required field
   } = req.body;
 
-  if (!selectedType || !surname || !firstName || !school || !schoolID || !employeeNumber || !personalEmail) {
+  // Add deped_email to required fields check
+  if (!selectedType || !surname || !firstName || !school || !schoolID || !employeeNumber || !personalEmail || !deped_email) {
     return res.status(400).json({ error: "Missing required fields" });
+  }
+
+  // Validate DepEd email format
+  if (!deped_email.endsWith('@deped.gov.ph')) {
+    return res.status(400).json({ error: "DepEd email must end with @deped.gov.ph" });
   }
 
   const fullName = `${surname}, ${firstName} ${middleName || ""}`.trim();
 
+  // Update the query to include deped_email
   const query = `
     INSERT INTO deped_account_reset_requests
-    (resetNumber, selected_type, name, surname, first_name, middle_name, school, school_id, employee_number, reset_email)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (resetNumber, selected_type, name, surname, first_name, middle_name, school, school_id, employee_number, reset_email, deped_email)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   conn.query(query, [
@@ -141,12 +149,19 @@ router.post("/reset-deped-account", (req, res) => {
     school, 
     schoolID, 
     employeeNumber,
-    personalEmail // Add this to the query parameters
+    personalEmail,
+    deped_email
   ], (err, result) => {
     if (err) {
+      console.error("Database error:", err);
       return res.status(500).json({ error: "Failed to submit reset request", dbError: err.message });
     }
-    res.json({ message: "Reset request submitted", requestId: result.insertId, resetNumber });
+    res.json({ 
+      message: "Reset request submitted successfully", 
+      requestId: result.insertId, 
+      resetNumber,
+      depedEmail: deped_email // Optionally return the deped email in response
+    });
   });
 });
 
